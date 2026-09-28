@@ -1,10 +1,15 @@
+# Build trees
+/build*/
 *.o
-build*/
-top_opt_matrices_small_csc/
-data*
-top_opt*
-cd2d*
+
+# Matrix sets (tens of GB); see README.md for where they come from
+/data/
+
+# Local tooling
+.vscode/
 nohup.out
-weather_matrices_18x27/
-weather_rhs_18x27/
 CLAUDE*
+
+# Output of scripts/run_benchmark.sh; move a run into results/ to keep it
+/top_opt_results_*.txt
+/top_opt_results_*.csv

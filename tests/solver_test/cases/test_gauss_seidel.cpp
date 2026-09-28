@@ -1,5 +1,5 @@
-#include "CSRMatrix.hpp"
-#include "gauss_seidel.hpp"
+#include "sam_hpc/core/CSRMatrix.hpp"
+#include "sam_hpc/precond/gauss_seidel.hpp"
 #include "testlib.hpp"
 
 void test_gauss_siedel_presmoothing_serial() {

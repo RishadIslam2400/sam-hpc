@@ -1,9 +1,9 @@
-#include "CSRMatrix.hpp"
+#include "sam_hpc/core/CSRMatrix.hpp"
 #include "testlib.hpp"
-#include "plain_aggregates.hpp"
-#include "pointwise_aggregates.hpp"
-#include "tentative_prolongation.hpp"
-#include "smoothed_aggregation.hpp"
+#include "sam_hpc/precond/coarsening/plain_aggregates.hpp"
+#include "sam_hpc/precond/coarsening/pointwise_aggregates.hpp"
+#include "sam_hpc/precond/coarsening/tentative_prolongation.hpp"
+#include "sam_hpc/precond/coarsening/smoothed_aggregation.hpp"
 
 // test case for a basic scenerio with one aggergate and removed nodes
 void test_basic_aggregation() {

@@ -1,10 +1,10 @@
-#include "gmres.hpp"
-#include "amg.hpp"
+#include "sam_hpc/krylov/gmres.hpp"
+#include "sam_hpc/precond/amg.hpp"
 #include "helpers.hpp"
 #include "testlib.hpp"
 #include "dummy_precond.hpp"
-#include "damped_jacobi.hpp"
-#include "ruge_stuben.hpp"
+#include "sam_hpc/precond/damped_jacobi.hpp"
+#include "sam_hpc/precond/coarsening/ruge_stuben.hpp"
 
 void test_gmres_no_precond() {
     std::cout << "GMRES without preconditioner..." << std::flush;

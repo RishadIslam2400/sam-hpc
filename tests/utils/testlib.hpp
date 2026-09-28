@@ -4,7 +4,7 @@
 #include <string>
 #include <functional>
 #include <sstream>
-#include "CSRMatrix.hpp"
+#include "sam_hpc/core/CSRMatrix.hpp"
 
 class FailureException : public std::runtime_error {
 public:

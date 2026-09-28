@@ -1,4 +1,4 @@
-#include "cuthill_mckee.hpp"
+#include "sam_hpc/precond/cuthill_mckee.hpp"
 #include "testlib.hpp"
 
 /**

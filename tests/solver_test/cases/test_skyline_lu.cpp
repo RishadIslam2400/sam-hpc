@@ -1,4 +1,4 @@
-#include "skyline_lu.hpp"
+#include "sam_hpc/precond/skyline_lu.hpp"
 #include "testlib.hpp"
 
 void test_skyline_lu_solver() {

@@ -1,7 +1,7 @@
-#include "CSRMatrix.hpp"
+#include "sam_hpc/core/CSRMatrix.hpp"
 #include "testlib.hpp"
 #include "helpers.hpp"
-#include "linearAlgebra.hpp"
+#include "sam_hpc/core/linearAlgebra.hpp"
 
 void testSubtraction() {
     for (int N = 0; N < 5e3; ++N) {

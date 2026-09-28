@@ -1,0 +1,43 @@
+# name, matrix_dir, rhs_dir, iters, threads:
+default name, top_opt_matrices_small_csr/, top_opt_rhs_small/, 5, 16
+# pattern variant: source
+# threads 16, NOT pinned - run under `numactl --cpunodebind=0 --membind=0` for a scaling curve that means anything
+target matrix_40, source matrix_50, n = 132300, nnz 7821763
+Preconditioner built in 24843.1 ms
+Target system with its own preconditioner: 156 iters, 8.874e-09 rel error, 15856.3 ms
+
+Running benchmark: [S(A_k) unsparsified]... map 20421.8 ms, 168 iters
+Running benchmark: [Column threshold 0.7]... map 114.6 ms, 182 iters
+Running benchmark: [Column threshold 0.8]... map 354.4 ms, 176 iters
+Running benchmark: [Column threshold 0.9]... map 19865.2 ms, 168 iters
+Running benchmark: [Fixed nnz 3]... map 332.6 ms, 177 iters
+Running benchmark: [Fixed nnz 5]... map 1282.1 ms, 173 iters
+Running benchmark: [Fixed nnz 7]... map 4551.6 ms, 171 iters
+Running benchmark: [Combined 0.1 / 0.8]... map 288.9 ms, 176 iters
+Running benchmark: [Combined 0.1 / 0.9]... map 16491.3 ms, 168 iters
+
+
+Benchmark Summary   (min over repetitions; times in ms)
+# n 132300, threads 16, variant source
+
+pattern                                                 nnz/row        map     spr       solve     spr      total   iters     residual
+Column threshold 0.7                                       1.31      114.6   36.1%     22285.2    2.8%    22399.7     182    2.295e-02
+Column threshold 0.8                                       4.49      354.4   13.6%     18552.6    4.9%    18907.0     176    2.069e-02
+Column threshold 0.9                                      39.22    19865.2   16.5%     20628.9    3.7%    40494.1     168    8.346e-03
+Combined 0.1 / 0.8                                         4.49      288.9   47.1%     22163.6   12.5%    22452.6     176    2.069e-02
+Combined 0.1 / 0.9                                        39.22    16491.3    4.3%     20722.2   22.2%    37213.5     168    8.346e-03
+Fixed nnz 3                                                5.03      332.6   86.1%     18434.1   10.6%    18766.7     177    2.029e-02
+Fixed nnz 5                                               12.89     1282.1    4.7%     18596.5   25.6%    19878.5     173    1.671e-02
+Fixed nnz 7                                               23.56     4551.6   94.8%     19199.9   23.3%    23751.6     171    1.435e-02
+S(A_k) unsparsified                                       59.12    20421.8    9.1%     19136.5   11.3%    39558.3     168    5.224e-03
+
+# CSV,pattern,variant,threads,map_nnz,map_min_ms,map_med_ms,solve_min_ms,solve_med_ms,total_min_ms,iters,residual,map_reps,solve_reps
+CSV,Column threshold 0.7,source,16,172728,114.5647,115.0645,22285.1678,22785.3760,22399.7324,182,2.294978e-02,5,3
+CSV,Column threshold 0.8,source,16,594260,354.3600,388.2169,18552.6118,19339.4612,18906.9718,176,2.068733e-02,5,3
+CSV,Column threshold 0.9,source,16,5188446,19865.1657,20707.3250,20628.8916,20827.6950,40494.0574,168,8.345850e-03,3,3
+CSV,Combined 0.1 / 0.8,source,16,594260,288.9213,299.6363,22163.6343,22554.0623,22452.5556,176,2.068733e-02,5,3
+CSV,Combined 0.1 / 0.9,source,16,5188446,16491.3048,16956.4408,20722.2448,23833.1453,37213.5496,168,8.345850e-03,3,3
+CSV,Fixed nnz 3,source,16,665719,332.5736,390.7292,18434.1116,19137.4979,18766.6852,177,2.029032e-02,5,3
+CSV,Fixed nnz 5,source,16,1705478,1282.0745,1309.6626,18596.4745,18992.7042,19878.5490,173,1.671109e-02,5,3
+CSV,Fixed nnz 7,source,16,3116605,4551.6437,7128.7115,19199.9467,19720.7932,23751.5904,171,1.434685e-02,5,3
+CSV,S(A_k) unsparsified,source,16,7821216,20421.8121,21042.1972,19136.5211,20542.1695,39558.3331,168,5.223951e-03,3,3

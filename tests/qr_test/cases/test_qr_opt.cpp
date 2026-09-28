@@ -1,6 +1,6 @@
 #include "testlib.hpp"
 #include "helpers.hpp"
-#include "qr.hpp"
+#include "sam_hpc/dense/qr.hpp"
 
 // Test the explicit QR factorization (factorize method)
 void test_factorization() {

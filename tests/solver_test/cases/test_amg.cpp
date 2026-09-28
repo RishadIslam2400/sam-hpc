@@ -1,4 +1,4 @@
-#include "amg.hpp"
+#include "sam_hpc/precond/amg.hpp"
 #include "helpers.hpp"
 #include "testlib.hpp"
 

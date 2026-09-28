@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CSRMatrix.hpp"
+#include "sam_hpc/core/CSRMatrix.hpp"
 
 
 template <typename T>

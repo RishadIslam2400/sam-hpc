@@ -1,4 +1,4 @@
-#include "ruge_stuben.hpp"
+#include "sam_hpc/precond/coarsening/ruge_stuben.hpp"
 #include "testlib.hpp"
 
 void test_1d_laplacian_splitting_and_interpolation() {

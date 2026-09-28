@@ -1,5 +1,5 @@
-#include "CSRMatrix.hpp"
-#include "damped_jacobi.hpp"
+#include "sam_hpc/core/CSRMatrix.hpp"
+#include "sam_hpc/precond/damped_jacobi.hpp"
 #include "testlib.hpp"
 #include "helpers.hpp"
 

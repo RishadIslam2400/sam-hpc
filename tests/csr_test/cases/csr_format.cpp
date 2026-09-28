@@ -1,4 +1,4 @@
-#include "CSRMatrix.hpp"
+#include "sam_hpc/core/CSRMatrix.hpp"
 #include "testlib.hpp"
 #include "helpers.hpp"
 

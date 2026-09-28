@@ -1,10 +1,10 @@
-#include "read_mat.hpp"
+#include "sam_hpc/core/read_mat.hpp"
 #include "helpers.hpp"
 #include "testlib.hpp"
 
 void testReadMat1() {
     std::cout << "Matrix reader 1..." << std::flush;
-    std::string filename = "/home/rishad/SAM-HPC/tests/sam_test/testMatrix.txt";
+    std::string filename = std::string(SAM_TEST_DATA_DIR) + "testMatrix.txt";
     CSRMatrix<double> testMatrix;
 
     // Read the matrix from the file
@@ -30,7 +30,7 @@ void testReadMat1() {
 
 void testReadMat2() {
     std::cout << "Matrix reader 2..." << std::flush;
-    std::string filename = "/home/rishad/SAM-HPC/tests/sam_test/testMatrix.txt";
+    std::string filename = std::string(SAM_TEST_DATA_DIR) + "testMatrix.txt";
     CSRMatrix<double> testMatrix = read_mat<double>(filename.c_str());
     if (testMatrix.isEmpty()) {
         throw FailureException("Failed to read matrix from file");

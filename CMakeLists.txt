@@ -1,63 +1,53 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 project(SAM_HPC LANGUAGES CXX)
-set (CMAKE_CXX_STANDARD 20)
+
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Without an explicit build type, CMake passes no optimization flags at all AND every
+# $<CONFIG:Release> option below is dropped, so an unconfigured build silently produces
+# unoptimized binaries. Default to Release; configure with -DCMAKE_BUILD_TYPE=Debug to override.
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
     message(STATUS "No build type specified, defaulting to Release")
 endif()
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
-set(SAM_RELEASE_OPTS -O3 -DNDEBUG -march=native)
-
-# Output settings
-message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
-# Options
 option(ENABLE_BENCHMARKS "Enable benchmarks" ON)
 option(ENABLE_TESTS "Enable tests" ON)
 
-# Subdirectories
-set(SUBDIRS
-    sam_hpc
-    csr_matrix
-    common
-    tools
-    solver
-    preconditioner
-    relaxation
-    coarsening
-)
+find_package(TBB REQUIRED)
+find_package(Threads REQUIRED)
+find_package(Eigen3 REQUIRED)   # ilutp wraps Eigen::IncompleteLUT
 
-foreach(subdir ${SUBDIRS})
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/CMakeLists.txt")
-        add_subdirectory(${subdir})
-    else()
-        message(WARNING "Directory '${subdir}' not found, skipping.")
-    endif()
-endforeach()
+# The whole library is header-only: one target, included as "sam_hpc/<module>/<header>.hpp".
+add_library(sam_hpc INTERFACE)
+target_include_directories(sam_hpc INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(sam_hpc INTERFACE TBB::tbb Threads::Threads Eigen3::Eigen)
 
-# Conditionally include tests
+# Large matrix sets live in data/ (git-ignored). Tests and benchmarks that need them get the
+# path at compile time instead of hardcoding a home directory.
+set(SAM_DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data" CACHE PATH "Directory holding the matrix sets")
+
+# Every executable gets the same flags, so measurements are comparable across binaries.
+# Debug links AddressSanitizer: never take timings from it (see CLAUDE.md).
+function(sam_add_executable name)
+    add_executable(${name} ${ARGN})
+    target_link_libraries(${name} PRIVATE sam_hpc)
+    target_compile_options(${name} PRIVATE
+        # vptr is off: TBB 2020 placement-news its task objects, which UBSan misreports.
+        $<$<CONFIG:Debug>:-Wall -g -fsanitize=address,undefined -fno-sanitize=vptr>
+        $<$<CONFIG:Release>:-O3 -DNDEBUG -march=native>
+    )
+    target_link_options(${name} PRIVATE $<$<CONFIG:Debug>:-fsanitize=address,undefined>)
+endfunction()
+
 if(ENABLE_TESTS)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
-        message(STATUS "Building tests")
-        add_subdirectory(tests)
-    else()
-        message(WARNING "Tests directory not found.")
-    endif()
-else()
-    message(STATUS "Skipping tests")
+    enable_testing()
+    add_subdirectory(tests)
 endif()
 
-# Benchmarks
 if(ENABLE_BENCHMARKS)
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/CMakeLists.txt")
-        message(STATUS "Building benchmarks")
-        add_subdirectory(benchmarks)
-    else()
-        message(WARNING "Benchmarks directory not found.")
-    endif()
-else()
-    message(STATUS "Skipping benchmarks")
+    add_subdirectory(benchmarks)
 endif()

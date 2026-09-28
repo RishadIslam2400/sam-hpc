@@ -1,5 +1,5 @@
-#include "CSRMatrix.hpp"
-#include "sparsityPattern.hpp"
+#include "sam_hpc/core/CSRMatrix.hpp"
+#include "sam_hpc/sam/sparsityPattern.hpp"
 #include "testlib.hpp"
 #include "helpers.hpp"
 
@@ -10,29 +10,30 @@ void testSimpleSparsityPattern()
     std::cout << "Simple sparsity pattern..." << std::flush;
 
     /*
-        "Standard" matrix
+        "Standard" matrix (square: the drop rules scale by D^-1/2 on both sides)
         [ 1  0 4 5 ]
         [ 2 -1 0 0 ]
         [ 0  0 3 2 ]
+        [ 7  0 0 6 ]
 
         should be stored as
-        rows:    [ 0, 3, 5, 7 ]
-        columns: [ 0, 2, 3, 0, 1, 2, 3 ]
-        values:  [ 1, 4, 5, 2, -1, 3, 2 ]
+        rows:    [ 0, 3, 5, 7, 9 ]
+        columns: [ 0, 2, 3, 0, 1, 2, 3, 0, 3 ]
+        values:  [ 1, 4, 5, 2, -1, 3, 2, 7, 6 ]
     */
 
     // Generate the matrix
-    std::vector<size_t> rowPointers1 = {0, 3, 5, 7};
-    std::vector<size_t> colIndices1 = {0, 2, 3, 0, 1, 2, 3};
-    std::vector<int> vals1 = {1, 4, 5, 2, -1, 3, 2};
-    CSRMatrix<int> m1(3, 4, vals1, rowPointers1, colIndices1);
+    std::vector<size_t> rowPointers1 = {0, 3, 5, 7, 9};
+    std::vector<size_t> colIndices1 = {0, 2, 3, 0, 1, 2, 3, 0, 3};
+    std::vector<int> vals1 = {1, 4, 5, 2, -1, 3, 2, 7, 6};
+    CSRMatrix<int> m1(4, 4, vals1, rowPointers1, colIndices1);
 
     // Generate the sparsity pattern
     SparsityPattern<int, SimplePattern> simplePattern(m1, m1, SimplePattern{});
     simplePattern.computePattern();
     const CSRMatrix<int>* recievedPattern = simplePattern.getPattern();
 
-    std::vector<int> patternValuesCorrect(7, 1);
+    std::vector<int> patternValuesCorrect(9, 1);
 
     assertEquals(recievedPattern->m_row_pointers, rowPointers1, "Incorrect internal row pointers");
     assertEquals(recievedPattern->m_col_indices, colIndices1, "Incorrect internal column indices");
@@ -147,9 +148,13 @@ void testColumnSparsityPattern()
     columnPattern.computePattern();
     const CSRMatrix<int> *recievedPattern = columnPattern.getPattern();
 
-    std::vector<int> patternValuesCorrect(14, 1);
-    std::vector<size_t> patternRowPointersCorrect = {0, 4, 7, 11, 14};
-    std::vector<size_t> patternColIndicesCorrect = {0, 1, 2, 3, 0, 1, 3, 0, 1, 2, 3, 0, 2, 3};
+    // Expected S^2 of the pattern chosen on the symmetrically diagonal-scaled matrix
+    // D^-1/2 A D^-1/2 (d_i = |a_ii|, 1 where a_ii = 0), which is what every drop rule
+    // thresholds on. The previous expectations predated the scaling.
+    // Filtered rows: {0,3} {1,3} {1,2,3} {0,3}.
+    std::vector<int> patternValuesCorrect(11, 1);
+    std::vector<size_t> patternRowPointersCorrect = {0, 2, 5, 9, 11};
+    std::vector<size_t> patternColIndicesCorrect = {0, 3, 0, 1, 3, 0, 1, 2, 3, 0, 3};
 
     assertEquals(recievedPattern->m_row_pointers, patternRowPointersCorrect, "Incorrect internal row pointers");
     assertEquals(recievedPattern->m_col_indices, patternColIndicesCorrect, "Incorrect internal column indices");
@@ -185,9 +190,13 @@ void testFixedNNZSparsityPattern()
     fixedNNZPattern.computePattern();
     const CSRMatrix<int> *recievedPattern = fixedNNZPattern.getPattern();
 
-    std::vector<int> patternValuesCorrect(11, 1);
-    std::vector<size_t> patternRowPointersCorrect = {0, 3, 6, 9, 11};
-    std::vector<size_t> patternColIndicesCorrect = {0, 2, 3, 0, 2, 3, 0, 2, 3, 2, 3};
+    // Expected S^2 of the pattern chosen on the symmetrically diagonal-scaled matrix
+    // D^-1/2 A D^-1/2 (d_i = |a_ii|, 1 where a_ii = 0), which is what every drop rule
+    // thresholds on. The previous expectations predated the scaling.
+    // Filtered rows (two largest scaled magnitudes, no ties): {2,3} {0,3} {1,3} {0}.
+    std::vector<int> patternValuesCorrect(10, 1);
+    std::vector<size_t> patternRowPointersCorrect = {0, 3, 6, 8, 10};
+    std::vector<size_t> patternColIndicesCorrect = {0, 1, 3, 0, 2, 3, 0, 3, 2, 3};
 
     assertEquals(recievedPattern->m_row_pointers, patternRowPointersCorrect, "Incorrect internal row pointers");
     assertEquals(recievedPattern->m_col_indices, patternColIndicesCorrect, "Incorrect internal column indices");

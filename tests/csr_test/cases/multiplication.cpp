@@ -1,5 +1,5 @@
-#include "CSRMatrix.hpp"
-#include "linearAlgebra.hpp"
+#include "sam_hpc/core/CSRMatrix.hpp"
+#include "sam_hpc/core/linearAlgebra.hpp"
 #include "testlib.hpp"
 #include "helpers.hpp"
 
