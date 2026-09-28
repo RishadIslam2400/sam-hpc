@@ -182,11 +182,18 @@ class QR {
 
       std::copy(f.begin(), f.begin() + cols, x);
 
-      // Solve Rx = y via back substitution
+      // Solve Rx = y via back substitution. A zero pivot means the local matrix is rank
+      // deficient: that unknown is set to 0, and what is left of equation i is then residual
+      // that no x can remove (equation i involves only x_i..x_{cols-1}, all fixed by now).
+      // Leaving y_i in x_i instead returned a vector that fit nothing, while resid_sq
+      // reported the residual of a different one.
       for (int i = cols, ia = (cols - 1) * col_stride; i-- > 0; ia -= col_stride) {
         T rii = r[i * (row_stride + col_stride)];
-        if (rii == T(0))
+        if (rii == T(0)) {
+          resid_sq += sqr(x[i]);
+          x[i] = T(0);
           continue;
+        }
         x[i] = (1 / rii) * x[i];
 
         for (int j = 0, ja = 0; j < i; ++j, ja += row_stride) {
@@ -207,10 +214,14 @@ class QR {
       // If A^T = QR, then R^T Q^T x = b
       // Solve for R^T z = b such that Q^T x = z, R^T is a lower triangular matrix.
       // Use forward substitution
+      // Same zero pivot rule as above: z_i = 0, and the unreduced f_i is residual.
       for (int i = 0, ia = 0; i < rows; ++i, ia += col_stride) {
         T rii = r[i * (row_stride + col_stride)];
-        if (rii == T(0))
+        if (rii == T(0)) {
+          resid_sq += sqr(f[i]);
+          f[i] = T(0);
           continue;
+        }
         f[i] = (1 / rii) * f[i];
 
         for (int j = i + 1, ja = j * row_stride; j < rows; ++j, ja += row_stride)
@@ -241,7 +252,7 @@ class QR {
 
   /// Squared 2-norm of the least squares residual from the last solve(), i.e.
   /// ||Ax - b||_2^2. For an overdetermined system this is the tail of Q^T b.
-  /// Underdetermined systems are solved exactly, so the residual is zero.
+  /// Underdetermined systems are solved exactly unless R has a zero pivot.
   T residual_sq() const { return resid_sq; }
 
  private:

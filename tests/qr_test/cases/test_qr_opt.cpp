@@ -107,3 +107,30 @@ void test_solve_underdetermined() {
     
     std::cout << "OK" << std::endl;
 }
+// A square system whose R has an exactly zero pivot. The third column is the sum of the
+// first two, so x_2 is free; the solver must set it to 0 and report the part of b that no
+// x can reach as residual, rather than leaving (Q^T b)_2 in x_2.
+void test_solve_rank_deficient() {
+    std::cout << "rank deficient square system..." << std::flush;
+
+    const int m = 3, n = 3;
+    std::vector<double> A = {
+        1.0, 0.0, 1.0,
+        0.0, 1.0, 1.0,
+        0.0, 0.0, 0.0
+    };
+    std::vector<double> b = {1.0, 2.0, 5.0};
+    std::vector<double> x(n);
+
+    QR<double> qr;
+    qr.solve(m, n, A.data(), b.data(), x.data());
+
+    // Ax = b is solved in the first two rows; the third row is unreachable.
+    const std::vector<double> Ax = {x[0] + x[2], x[1] + x[2], 0.0};
+    double resid_sq = 0.0;
+    for (int i = 0; i < m; ++i) resid_sq += (Ax[i] - b[i]) * (Ax[i] - b[i]);
+
+    assertEquals(25.0, resid_sq, "Returned x is not a least squares solution!");
+    assertEquals(resid_sq, qr.residual_sq(), "Reported residual does not match the returned x!");
+    std::cout << "OK" << std::endl;
+}
