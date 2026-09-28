@@ -6,10 +6,7 @@
 #include <utility>
 
 #include "CSRMatrix.hpp"
-#include "eigenQRSolve.hpp"
-#include "householderQR.hpp"
 #include "launchThreads.hpp"
-#include "mgsQR.hpp"
 #include "qr.hpp"
 #include "sparsityPattern.hpp"
 

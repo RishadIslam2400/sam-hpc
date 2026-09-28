@@ -23,7 +23,6 @@ target_link_options(top_opt_bench
     $<$<CONFIG:Debug>:-fsanitize=address>
 )
 
-add_subdirectory(qr_bench)
 add_subdirectory(microbench)
 
 add_executable(weather_bench weather_benchmark.cpp)

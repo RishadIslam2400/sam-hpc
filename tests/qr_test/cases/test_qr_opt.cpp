@@ -16,7 +16,7 @@ void test_factorization() {
 
     QR<double> qr;
 
-    // row major
+    // A is stored column-major: columns (1, 1, 1) and (-1, 0, 1)
     qr.factorize(m, n, A_copy.data(), storage_order::col_major);
 
     // Extract Q and R matrices
@@ -46,9 +46,16 @@ void test_factorization() {
     for(int i = 0; i < n; ++i) I[i * n + i] = 1.0;
     assertEquals(I, QtQ, "Matrix Q is not orthogonal!");
 
-    // Test 2: Q * R should reconstruct the original matrix A
+    // Test 2: Q * R should reconstruct the original matrix A. Q and R were extracted
+    // row-major above, so compare against A in row-major order, not its col-major buffer.
+    std::vector<double> A_row_major(m * n);
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            A_row_major[i * n + j] = A[j * m + i];
+        }
+    }
     std::vector<double> QR_reconstructed = multiplyMatrices<double>(m, n, Q, n, n, R);
-    assertEquals(A, QR_reconstructed, "QR factorization incorrect!");
+    assertEquals(A_row_major, QR_reconstructed, "QR factorization incorrect!");
 
 
     std::cout << "OK" << std::endl;

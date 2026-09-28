@@ -22,8 +22,6 @@ option(ENABLE_TESTS "Enable tests" ON)
 set(SUBDIRS
     sam_hpc
     csr_matrix
-    mgs_solver
-    householder_solver
     common
     tools
     solver
