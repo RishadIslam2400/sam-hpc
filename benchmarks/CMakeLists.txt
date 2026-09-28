@@ -16,8 +16,7 @@ target_compile_options(top_opt_bench
     $<$<CONFIG:Debug>:-Wall;-Werror;-fsanitize=address>
 
     # Release options
-    $<$<CONFIG:Release>:-O3;-DNDEBUG>
-    $<$<CONFIG:Release>:-march=native> 
+    $<$<CONFIG:Release>:${SAM_RELEASE_OPTS}>
 )
 target_link_options(top_opt_bench
     PRIVATE
@@ -38,9 +37,7 @@ target_compile_options(weather_bench
     $<$<CONFIG:Debug>:-fsanitize=address>
 
     # Release options
-    $<$<CONFIG:Release>:-O3>
-    $<$<CONFIG:Release>:-DNDEBUG>
-    $<$<CONFIG:Release>:-march=native>
+    $<$<CONFIG:Release>:${SAM_RELEASE_OPTS}>
 )
 target_link_options(weather_bench
     PRIVATE

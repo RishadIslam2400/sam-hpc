@@ -27,9 +27,9 @@ void testSortRows() {
     std::vector<int> valsCorrect = {1, 4, 5, 2, -1, 3, 2};
 
     sortRows(m1);
-    assertEquals<std::vector<size_t>>(rowPointersCorrect, m1.m_row_pointers, "Incorrect internal row pointers");
-    assertEquals<std::vector<size_t>>(colIndicesCorrect, m1.m_col_indices, "Incorrect internal column indices");
-    assertEquals<std::vector<int>>(valsCorrect, m1.m_vals, "Incorrect internal values");
+    assertEquals(rowPointersCorrect, m1.m_row_pointers, "Incorrect internal row pointers");
+    assertEquals(colIndicesCorrect, m1.m_col_indices, "Incorrect internal column indices");
+    assertEquals(valsCorrect, m1.m_vals, "Incorrect internal values");
 
     std::cout << "OK" << std::endl;
 }
@@ -109,8 +109,8 @@ void testDiagonal() {
     std::vector<double> originalDiag = {1, -1, 4, 0};
     std::vector<double> forScalingDiag = {1, 1, 0.5, 1};
 
-    assertEquals<std::vector<double>>(m1_diag, originalDiag, "Incorrect diagonal");
-    assertEquals<std::vector<double>>(m1_diag_for_scaling, forScalingDiag, "Incorrect diagonal for scaling");
+    assertEquals(m1_diag, originalDiag, "Incorrect diagonal");
+    assertEquals(m1_diag_for_scaling, forScalingDiag, "Incorrect diagonal for scaling");
 
     std::cout << "OK" << std::endl;
 }
@@ -143,12 +143,12 @@ void testAXPBY() {
     double b = 3.0;
     std::vector<double> result = {17.0, 22.0, 27.0, 32.0};
     axpby(a, x, b, y);
-    assertEquals<std::vector<double>>(result, y, "Incorrect axpby function.");
+    assertEquals(result, y, "Incorrect axpby function.");
 
     y = {5.0, 6.0, 7.0, 8.0};
     result = {2.0, 4.0, 6.0, 8.0};
     axpby(a, x, 0.0, y);
-    assertEquals<std::vector<double>>(result, y, "Incorrect axpby function.");
+    assertEquals(result, y, "Incorrect axpby function.");
     std::cout << "OK" << std::endl;
 }
 
@@ -160,13 +160,13 @@ void testAXPBYPCZ() {
     int a = 1, b = 2, c = 3;
     std::vector<int> result = {38, 44, 50, 56};
     axpbypcz(a, x, b, y, c, z);
-    assertEquals<std::vector<int>>(result, z, "Incorrect axpbypcz function.");
+    assertEquals(result, z, "Incorrect axpbypcz function.");
 
     z = {9, 10, 11, 12};
     result = {11, 14, 17, 20};
     c = 0;
     axpbypcz(a, x, b, y, c, z);
-    assertEquals<std::vector<int>>(result, z, "Incorrect axpbypcz function.");
+    assertEquals(result, z, "Incorrect axpbypcz function.");
     std::cout << "OK" << std::endl;
 }
 
@@ -182,7 +182,7 @@ void testLinComb() {
     double alpha = 0.5;
     std::vector<double> result = {5.5, 14.5, 23.5, 32.5};
     linComb(c.size(), c, v, alpha, y);
-    assertEquals<std::vector<double>>(result, y, "Incorrect lincomb function");
+    assertEquals(result, y, "Incorrect lincomb function");
     std::cout << "OK" << std::endl;
 }
 
@@ -203,6 +203,6 @@ void testResidual() {
     std::vector<double> result = {3.0, -1.0, 6.0, 2.0};
 
     residual(rhs, A, x, res);
-    assertEquals<std::vector<double>>(result, res, "Incorrect residual calculation");
+    assertEquals(result, res, "Incorrect residual calculation");
     std::cout << "OK" << std::endl;
 }

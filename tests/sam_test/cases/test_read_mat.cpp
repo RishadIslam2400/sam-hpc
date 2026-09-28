@@ -22,9 +22,9 @@ void testReadMat1() {
     assertEquals<size_t>(testMatrix.m_rows, expectedRows, "Row number mismatch");
     assertEquals<size_t>(testMatrix.m_cols, expectedCols, "Column number mismatch");
     assertEquals<size_t>(testMatrix.m_nnz, expectedNNZ, "NNZ mismatch");
-    assertEquals<std::vector<size_t>>(testMatrix.m_row_pointers, expectedRowPointers, "Row pointers mismatch");
-    assertEquals<std::vector<size_t>>(testMatrix.m_col_indices, expectedColIndices, "Column indices mismatch");
-    assertEquals<std::vector<double>>(testMatrix.m_vals, expectedValues, "Values mismatch");
+    assertEquals(testMatrix.m_row_pointers, expectedRowPointers, "Row pointers mismatch");
+    assertEquals(testMatrix.m_col_indices, expectedColIndices, "Column indices mismatch");
+    assertEquals(testMatrix.m_vals, expectedValues, "Values mismatch");
     std::cout << "OK" << std::endl;
 }
 
@@ -46,8 +46,8 @@ void testReadMat2() {
     assertEquals<size_t>(testMatrix.m_rows, expectedRows, "Row number mismatch");
     assertEquals<size_t>(testMatrix.m_cols, expectedCols, "Column number mismatch");
     assertEquals<size_t>(testMatrix.m_nnz, expectedNNZ, "NNZ mismatch");
-    assertEquals<std::vector<size_t>>(testMatrix.m_row_pointers, expectedRowPointers, "Row pointers mismatch");
-    assertEquals<std::vector<size_t>>(testMatrix.m_col_indices, expectedColIndices, "Column indices mismatch");
-    assertEquals<std::vector<double>>(testMatrix.m_vals, expectedValues, "Values mismatch");
+    assertEquals(testMatrix.m_row_pointers, expectedRowPointers, "Row pointers mismatch");
+    assertEquals(testMatrix.m_col_indices, expectedColIndices, "Column indices mismatch");
+    assertEquals(testMatrix.m_vals, expectedValues, "Values mismatch");
     std::cout << "OK" << std::endl;
 }

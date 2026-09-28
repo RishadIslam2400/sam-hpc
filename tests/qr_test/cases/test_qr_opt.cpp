@@ -44,11 +44,11 @@ void test_factorization() {
     std::vector<double> QtQ = multiplyMatrices<double>(n, m, Qt, m, n, Q);
     std::vector<double> I(n * n, 0.0);
     for(int i = 0; i < n; ++i) I[i * n + i] = 1.0;
-    assertEquals<std::vector<double>>(I, QtQ, "Matrix Q is not orthogonal!");
+    assertEquals(I, QtQ, "Matrix Q is not orthogonal!");
 
     // Test 2: Q * R should reconstruct the original matrix A
     std::vector<double> QR_reconstructed = multiplyMatrices<double>(m, n, Q, n, n, R);
-    assertEquals<std::vector<double>>(A, QR_reconstructed, "QR factorization incorrect!");
+    assertEquals(A, QR_reconstructed, "QR factorization incorrect!");
 
 
     std::cout << "OK" << std::endl;
@@ -73,7 +73,7 @@ void test_solve_overdetermined() {
     QR<double> qr;
     qr.solve(m, n, A.data(), b.data(), x.data());
 
-    assertEquals<std::vector<double>>(expected_x, x, "Solution incorrect!");
+    assertEquals(expected_x, x, "Solution incorrect!");
     std::cout << "OK" << std::endl;
 }
 
@@ -96,7 +96,7 @@ void test_solve_underdetermined() {
     qr.solve(m, n, A.data(), b.data(), x.data());
 
     // Test 1: The solution should be correct
-    assertEquals<std::vector<double>>(expected_x, x, "Solution is incorrect!");
+    assertEquals(expected_x, x, "Solution is incorrect!");
     
     std::cout << "OK" << std::endl;
 }

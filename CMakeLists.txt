@@ -1,9 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 project(SAM_HPC LANGUAGES CXX)
-
-# Set C++ Standard
 set (CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+    message(STATUS "No build type specified, defaulting to Release")
+endif()
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
+set(SAM_RELEASE_OPTS -O3 -DNDEBUG -march=native)
 
 # Output settings
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")

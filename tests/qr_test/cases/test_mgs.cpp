@@ -14,7 +14,7 @@ void testMgsQRSolve1() {
     std::vector<double> expectedSolution = {1, 3};
     mgsQRSolve(A, rhs, x, 2, 2);
 
-    assertEquals<std::vector<double>>(expectedSolution, x, "Incorrect solution");
+    assertEquals(expectedSolution, x, "Incorrect solution");
     std::cout << "OK" << std::endl;
 }
 
@@ -29,7 +29,7 @@ void testMgsQRSolve2() {
     std::vector<double> expectedSolution = {1.0, 2.0};
     mgsQRSolve(A, rhs, x, 2, 2);
 
-    assertEquals<std::vector<double>>(expectedSolution, x, "Incorrect solution");
+    assertEquals(expectedSolution, x, "Incorrect solution");
     std::cout << "OK" << std::endl;
 }
 
@@ -45,7 +45,7 @@ void testMgsQRSolve3() {
     std::vector<double> expectedSolution = {0.06666667, 0.4, 0.73333333};
     mgsQRSolve(A, rhs, x, 3, 3);
 
-    assertEquals<std::vector<double>>(expectedSolution, x, "Incorrect solution");
+    assertEquals(expectedSolution, x, "Incorrect solution");
     std::cout << "OK" << std::endl;
 }
 
@@ -61,7 +61,7 @@ void testMgsQRSolve4() {
     std::vector<double> expectedSolution = {1, 1, 1};
     mgsQRSolve(A, rhs, x, 3, 3);
 
-    assertEquals<std::vector<double>>(expectedSolution, x, "Incorrect solution");
+    assertEquals(expectedSolution, x, "Incorrect solution");
     std::cout << "OK" << std::endl;
 }
 
@@ -77,7 +77,7 @@ void testMgsQRSolve5() {
     std::vector<double> expectedSolution = {3.5, 1.4};
     mgsQRSolve(A, rhs, x, 2, 4);
 
-    assertEquals<std::vector<double>>(expectedSolution, x, "Incorrect solution");
+    assertEquals(expectedSolution, x, "Incorrect solution");
     std::cout << "OK" << std::endl;
 }
 
@@ -91,7 +91,7 @@ void testMgsQRSolve6() {
     std::vector<double> expectedSolution = {1.0, 1.0};
     mgsQRSolve(A, rhs, x, 2, 2);
 
-    assertEquals<std::vector<double>>(expectedSolution, x, "Incorrect solution");
+    assertEquals(expectedSolution, x, "Incorrect solution");
     std::cout << "OK" << std::endl;
     std::cout << x << std::endl;
     std::cout << A << std::endl;

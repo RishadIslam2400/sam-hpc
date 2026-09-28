@@ -25,7 +25,7 @@ void test_standard_v_cycle_1() {
         solver.cycle(rhs, x);
     }
 
-    assertEquals<std::vector<double>>(x_exact, x, "Solution not correct!");
+    assertEquals(x_exact, x, "Solution not correct!");
 
     std::cout << "OK" << std::endl;
 }
@@ -52,7 +52,7 @@ void test_standard_v_cycle_2() {
         solver.cycle(rhs, x);
     }
 
-    assertEquals<std::vector<double>>(x_exact, x, "Solution not correct!");
+    assertEquals(x_exact, x, "Solution not correct!");
 
     std::cout << "OK" << std::endl;
 }

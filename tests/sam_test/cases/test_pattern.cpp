@@ -34,9 +34,9 @@ void testSimpleSparsityPattern()
 
     std::vector<int> patternValuesCorrect(7, 1);
 
-    assertEquals<std::vector<size_t>>(recievedPattern->m_row_pointers, rowPointers1, "Incorrect internal row pointers");
-    assertEquals<std::vector<size_t>>(recievedPattern->m_col_indices, colIndices1, "Incorrect internal column indices");
-    assertEquals<std::vector<int>>(recievedPattern->m_vals, patternValuesCorrect, "Incorrect internal values");
+    assertEquals(recievedPattern->m_row_pointers, rowPointers1, "Incorrect internal row pointers");
+    assertEquals(recievedPattern->m_col_indices, colIndices1, "Incorrect internal column indices");
+    assertEquals(recievedPattern->m_vals, patternValuesCorrect, "Incorrect internal values");
 
     std::cout << "OK" << std::endl;
 }
@@ -73,9 +73,9 @@ void testGlobalSparsityPattern1()
     std::vector<size_t> patternRowPointersCorrect = {0, 3, 7, 10, 13};
     std::vector<size_t> patternColIndicesCorrect = {0, 2, 3, 0, 1, 2, 3, 0, 2, 3, 0, 2, 3};
 
-    assertEquals<std::vector<size_t>>(recievedPattern->m_row_pointers, patternRowPointersCorrect, "Incorrect internal row pointers");
-    assertEquals<std::vector<size_t>>(recievedPattern->m_col_indices, patternColIndicesCorrect, "Incorrect internal column indices");
-    assertEquals<std::vector<int>>(recievedPattern->m_vals, patternValuesCorrect, "Incorrect internal values"); 
+    assertEquals(recievedPattern->m_row_pointers, patternRowPointersCorrect, "Incorrect internal row pointers");
+    assertEquals(recievedPattern->m_col_indices, patternColIndicesCorrect, "Incorrect internal column indices");
+    assertEquals(recievedPattern->m_vals, patternValuesCorrect, "Incorrect internal values"); 
 
     std::cout << "OK" << std::endl;
 }
@@ -112,9 +112,9 @@ void testGlobalSparsityPattern2()
     std::vector<size_t> patternRowPointersCorrect = {0, 2, 3, 4, 6};
     std::vector<size_t> patternColIndicesCorrect = {0, 3, 1, 2, 0, 3};
 
-    assertEquals<std::vector<size_t>>(recievedPattern->m_row_pointers, patternRowPointersCorrect, "Incorrect internal row pointers");
-    assertEquals<std::vector<size_t>>(recievedPattern->m_col_indices, patternColIndicesCorrect, "Incorrect internal column indices");
-    assertEquals<std::vector<int>>(recievedPattern->m_vals, patternValuesCorrect, "Incorrect internal values");
+    assertEquals(recievedPattern->m_row_pointers, patternRowPointersCorrect, "Incorrect internal row pointers");
+    assertEquals(recievedPattern->m_col_indices, patternColIndicesCorrect, "Incorrect internal column indices");
+    assertEquals(recievedPattern->m_vals, patternValuesCorrect, "Incorrect internal values");
 
     std::cout << "OK" << std::endl;
 }
@@ -151,9 +151,9 @@ void testColumnSparsityPattern()
     std::vector<size_t> patternRowPointersCorrect = {0, 4, 7, 11, 14};
     std::vector<size_t> patternColIndicesCorrect = {0, 1, 2, 3, 0, 1, 3, 0, 1, 2, 3, 0, 2, 3};
 
-    assertEquals<std::vector<size_t>>(recievedPattern->m_row_pointers, patternRowPointersCorrect, "Incorrect internal row pointers");
-    assertEquals<std::vector<size_t>>(recievedPattern->m_col_indices, patternColIndicesCorrect, "Incorrect internal column indices");
-    assertEquals<std::vector<int>>(recievedPattern->m_vals, patternValuesCorrect, "Incorrect internal values");
+    assertEquals(recievedPattern->m_row_pointers, patternRowPointersCorrect, "Incorrect internal row pointers");
+    assertEquals(recievedPattern->m_col_indices, patternColIndicesCorrect, "Incorrect internal column indices");
+    assertEquals(recievedPattern->m_vals, patternValuesCorrect, "Incorrect internal values");
     std::cout << "OK" << std::endl;
 }
 
@@ -189,8 +189,8 @@ void testFixedNNZSparsityPattern()
     std::vector<size_t> patternRowPointersCorrect = {0, 3, 6, 9, 11};
     std::vector<size_t> patternColIndicesCorrect = {0, 2, 3, 0, 2, 3, 0, 2, 3, 2, 3};
 
-    assertEquals<std::vector<size_t>>(recievedPattern->m_row_pointers, patternRowPointersCorrect, "Incorrect internal row pointers");
-    assertEquals<std::vector<size_t>>(recievedPattern->m_col_indices, patternColIndicesCorrect, "Incorrect internal column indices");
-    assertEquals<std::vector<int>>(recievedPattern->m_vals, patternValuesCorrect, "Incorrect internal values");
+    assertEquals(recievedPattern->m_row_pointers, patternRowPointersCorrect, "Incorrect internal row pointers");
+    assertEquals(recievedPattern->m_col_indices, patternColIndicesCorrect, "Incorrect internal column indices");
+    assertEquals(recievedPattern->m_vals, patternValuesCorrect, "Incorrect internal values");
     std::cout << "OK" << std::endl;
 }

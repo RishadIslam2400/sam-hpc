@@ -15,7 +15,7 @@ void testEigenQRSolve1()
     std::vector<double> expectedSolution = {1, 3};
     eigenQRSolve(A, rhs, x, 2, 2);
 
-    assertEquals<std::vector<double>>(expectedSolution, x, "Incorrect solution");
+    assertEquals(expectedSolution, x, "Incorrect solution");
     std::cout << "OK" << std::endl;
 }
 
@@ -30,7 +30,7 @@ void testEigenQRSolve2()
     std::vector<double> expectedSolution = {1.0, 2.0};
     eigenQRSolve(A, rhs, x, 2, 2);
 
-    assertEquals<std::vector<double>>(expectedSolution, x, "Incorrect solution");
+    assertEquals(expectedSolution, x, "Incorrect solution");
     std::cout << "OK" << std::endl;
 }
 
@@ -46,7 +46,7 @@ void testEigenQRSolve3()
     std::vector<double> expectedSolution = {0.06666667, 0.4, 0.73333333};
     eigenQRSolve(A, rhs, x, 3, 3);
 
-    assertEquals<std::vector<double>>(expectedSolution, x, "Incorrect solution");
+    assertEquals(expectedSolution, x, "Incorrect solution");
     std::cout << "OK" << std::endl;
 }
 
@@ -62,7 +62,7 @@ void testEigenQRSolve4()
     std::vector<double> expectedSolution = {1, 1, 1};
     eigenQRSolve(A, rhs, x, 3, 3);
 
-    assertEquals<std::vector<double>>(expectedSolution, x, "Incorrect solution");
+    assertEquals(expectedSolution, x, "Incorrect solution");
     std::cout << "OK" << std::endl;
 }
 
@@ -78,7 +78,7 @@ void testEigenQRSolve5()
     std::vector<double> expectedSolution = {3.5, 1.4};
     eigenQRSolve(A, rhs, x, 2, 4);
 
-    assertEquals<std::vector<double>>(expectedSolution, x, "Incorrect solution");
+    assertEquals(expectedSolution, x, "Incorrect solution");
     std::cout << "OK" << std::endl;
 }
 
@@ -93,6 +93,6 @@ void testEigenQRSolve6()
     std::vector<double> expectedSolution = {1.0, 1.0};
     eigenQRSolve(A, rhs, x, 2, 2);
 
-    assertEquals<std::vector<double>>(expectedSolution, x, "Incorrect solution");
+    assertEquals(expectedSolution, x, "Incorrect solution");
     std::cout << "OK" << std::endl;
 }

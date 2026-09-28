@@ -1,0 +1,230 @@
+# name, matrix_dir, rhs_dir, iters, threads:
+default name, top_opt_matrices_small_csr/, default path, 5, 0
+# pattern variant: union, row set: pattern
+target top_opt_matrices_small_csr/matrix_40.txt  132300 rows, 7821763 nnz
+source top_opt_matrices_small_csr/matrix_50.txt  132300 rows, 7821216 nnz
+
+================ threads: 1 ================
+# threads 1, NOT pinned - run under `numactl --cpunodebind=0 --membind=0` for a scaling curve that means anything
+
+[column 0.8 | union | J=pattern]  threads 1   pattern nnz 606522 (4.6/row)   final nnz 606522 (4.6/row)   map nnz after filtration 164879
+  phase                        min        median   of total         reps
+  pattern merge           71.84 ms      71.84 ms     24.2 %       5 reps      0.0 % spr
+  pattern filter          45.62 ms      45.62 ms     15.3 %       5 reps      0.0 % spr
+  pattern extend           7.10 ms       7.10 ms      2.4 %       5 reps      0.0 % spr
+  map                    133.23 ms     135.92 ms     44.8 %       5 reps      2.9 % spr
+  post filtration          2.64 ms       2.67 ms      0.9 %       5 reps      5.5 % spr
+  TOTAL (measured)       297.37 ms     304.92 ms    100.0 %       5 reps     14.5 % spr
+  (sum of phases)        260.43 ms   delta vs measured total: -12.4 %
+  map internals (share of map thread-time):  symbolic 10.7% | rhs 12.3% | submatrix 41.6% | solve 35.4%
+  local problems: rows 132300, mean |I| 4.6 (max 22), mean |J| 7.7 (max 57)
+  least squares work: 0.1 GFLOP over 133.2 ms = 0.43 GFLOP/s
+  accuracy: ||N A_k - A_0||_F / ||A_0||_F  exact 2.0201e-02   from QR residual 3.7424e-03   (QR value understates by 81.5%)
+CSV,column 0.8,union,pattern,1,pattern_merge,71.8413
+CSV,column 0.8,union,pattern,1,pattern_filter,45.6177
+CSV,column 0.8,union,pattern,1,pattern_extend,7.0977
+CSV,column 0.8,union,pattern,1,map,133.2336
+CSV,column 0.8,union,pattern,1,post_filtration,2.6413
+CSV,column 0.8,union,pattern,1,total,297.3711
+CSVACC,column 0.8,union,pattern,1,606522,2.020085e-02,3.742441e-03
+
+[fixed nnz 5 | union | J=pattern]  threads 1   pattern nnz 1709329 (12.9/row)   final nnz 1709329 (12.9/row)   map nnz after filtration 228047
+  phase                        min        median   of total         reps
+  pattern merge          111.08 ms     111.08 ms      5.2 %       5 reps      0.0 % spr
+  pattern filter         123.01 ms     123.01 ms      5.7 %       5 reps      0.0 % spr
+  pattern extend          41.31 ms      41.31 ms      1.9 %       5 reps      0.0 % spr
+  map                   2574.09 ms    3081.58 ms    119.9 %       2 reps     19.7 % spr
+  post filtration         11.22 ms      12.23 ms      0.5 %       5 reps     10.4 % spr
+  TOTAL (measured)      2147.15 ms    2147.15 ms    100.0 %       1 reps      0.0 % spr
+  (sum of phases)       2860.72 ms   delta vs measured total: 33.2 %
+  map internals (share of map thread-time):  symbolic 17.6% | rhs 4.0% | submatrix 25.7% | solve 52.7%
+  local problems: rows 132300, mean |I| 12.9 (max 20), mean |J| 46.1 (max 124)
+  least squares work: 2.1 GFLOP over 2574.1 ms = 0.83 GFLOP/s
+  accuracy: ||N A_k - A_0||_F / ||A_0||_F  exact 1.5940e-02   from QR residual 9.7361e-03   (QR value understates by 38.9%)
+CSV,fixed nnz 5,union,pattern,1,pattern_merge,111.0801
+CSV,fixed nnz 5,union,pattern,1,pattern_filter,123.0150
+CSV,fixed nnz 5,union,pattern,1,pattern_extend,41.3095
+CSV,fixed nnz 5,union,pattern,1,map,2574.0890
+CSV,fixed nnz 5,union,pattern,1,post_filtration,11.2220
+CSV,fixed nnz 5,union,pattern,1,total,2147.1469
+CSVACC,fixed nnz 5,union,pattern,1,1709329,1.593961e-02,9.736145e-03
+
+================ threads: 2 ================
+# threads 2, NOT pinned - run under `numactl --cpunodebind=0 --membind=0` for a scaling curve that means anything
+
+[column 0.8 | union | J=pattern]  threads 2   pattern nnz 606522 (4.6/row)   final nnz 606522 (4.6/row)   map nnz after filtration 164879
+  phase                        min        median   of total         reps
+  pattern merge           90.54 ms      90.54 ms     37.6 %       5 reps      0.0 % spr
+  pattern filter          43.36 ms      43.36 ms     18.0 %       5 reps      0.0 % spr
+  pattern extend           7.80 ms       7.80 ms      3.2 %       5 reps      0.0 % spr
+  map                    147.51 ms     182.85 ms     61.2 %       5 reps     34.2 % spr
+  post filtration          2.97 ms       3.16 ms      1.2 %       5 reps     19.0 % spr
+  TOTAL (measured)       240.89 ms     278.28 ms    100.0 %       5 reps     34.9 % spr
+  (sum of phases)        292.18 ms   delta vs measured total: 21.3 %
+  map internals (share of map thread-time):  symbolic 11.4% | rhs 11.5% | submatrix 41.8% | solve 35.3%
+  local problems: rows 132300, mean |I| 4.6 (max 22), mean |J| 7.7 (max 57)
+  least squares work: 0.1 GFLOP over 147.5 ms = 0.39 GFLOP/s
+  accuracy: ||N A_k - A_0||_F / ||A_0||_F  exact 2.0201e-02   from QR residual 3.7424e-03   (QR value understates by 81.5%)
+CSV,column 0.8,union,pattern,2,pattern_merge,90.5384
+CSV,column 0.8,union,pattern,2,pattern_filter,43.3585
+CSV,column 0.8,union,pattern,2,pattern_extend,7.8030
+CSV,column 0.8,union,pattern,2,map,147.5109
+CSV,column 0.8,union,pattern,2,post_filtration,2.9683
+CSV,column 0.8,union,pattern,2,total,240.8881
+CSVACC,column 0.8,union,pattern,2,606522,2.020085e-02,3.742441e-03
+
+[fixed nnz 5 | union | J=pattern]  threads 2   pattern nnz 1709329 (12.9/row)   final nnz 1709329 (12.9/row)   map nnz after filtration 228047
+  phase                        min        median   of total         reps
+  pattern merge          159.64 ms     159.64 ms     16.5 %       5 reps      0.0 % spr
+  pattern filter         134.92 ms     134.92 ms     14.0 %       5 reps      0.0 % spr
+  pattern extend          35.26 ms      35.26 ms      3.6 %       5 reps      0.0 % spr
+  map                    975.49 ms    1369.18 ms    101.0 %       2 reps     40.4 % spr
+  post filtration          6.34 ms       6.36 ms      0.7 %       5 reps      3.4 % spr
+  TOTAL (measured)       966.13 ms    1078.20 ms    100.0 %       3 reps     13.3 % spr
+  (sum of phases)       1311.65 ms   delta vs measured total: 35.8 %
+  map internals (share of map thread-time):  symbolic 19.1% | rhs 3.0% | submatrix 24.8% | solve 53.1%
+  local problems: rows 132300, mean |I| 12.9 (max 20), mean |J| 46.1 (max 124)
+  least squares work: 2.1 GFLOP over 975.5 ms = 2.20 GFLOP/s
+  accuracy: ||N A_k - A_0||_F / ||A_0||_F  exact 1.5940e-02   from QR residual 9.7361e-03   (QR value understates by 38.9%)
+CSV,fixed nnz 5,union,pattern,2,pattern_merge,159.6391
+CSV,fixed nnz 5,union,pattern,2,pattern_filter,134.9200
+CSV,fixed nnz 5,union,pattern,2,pattern_extend,35.2595
+CSV,fixed nnz 5,union,pattern,2,map,975.4934
+CSV,fixed nnz 5,union,pattern,2,post_filtration,6.3361
+CSV,fixed nnz 5,union,pattern,2,total,966.1342
+CSVACC,fixed nnz 5,union,pattern,2,1709329,1.593961e-02,9.736145e-03
+
+================ threads: 4 ================
+# threads 4, NOT pinned - run under `numactl --cpunodebind=0 --membind=0` for a scaling curve that means anything
+
+[column 0.8 | union | J=pattern]  threads 4   pattern nnz 606522 (4.6/row)   final nnz 606522 (4.6/row)   map nnz after filtration 164879
+  phase                        min        median   of total         reps
+  pattern merge           50.20 ms      50.20 ms     29.3 %       5 reps      0.0 % spr
+  pattern filter          25.84 ms      25.84 ms     15.1 %       5 reps      0.0 % spr
+  pattern extend           6.90 ms       6.90 ms      4.0 %       5 reps      0.0 % spr
+  map                     82.52 ms      85.68 ms     48.1 %       5 reps     14.3 % spr
+  post filtration          1.78 ms       1.84 ms      1.0 %       5 reps     35.6 % spr
+  TOTAL (measured)       171.46 ms     180.65 ms    100.0 %       5 reps     13.3 % spr
+  (sum of phases)        167.25 ms   delta vs measured total: -2.5 %
+  map internals (share of map thread-time):  symbolic 10.8% | rhs 11.2% | submatrix 39.8% | solve 38.2%
+  local problems: rows 132300, mean |I| 4.6 (max 22), mean |J| 7.7 (max 57)
+  least squares work: 0.1 GFLOP over 82.5 ms = 0.69 GFLOP/s
+  accuracy: ||N A_k - A_0||_F / ||A_0||_F  exact 2.0201e-02   from QR residual 3.7424e-03   (QR value understates by 81.5%)
+CSV,column 0.8,union,pattern,4,pattern_merge,50.2047
+CSV,column 0.8,union,pattern,4,pattern_filter,25.8449
+CSV,column 0.8,union,pattern,4,pattern_extend,6.8963
+CSV,column 0.8,union,pattern,4,map,82.5177
+CSV,column 0.8,union,pattern,4,post_filtration,1.7837
+CSV,column 0.8,union,pattern,4,total,171.4616
+CSVACC,column 0.8,union,pattern,4,606522,2.020085e-02,3.742441e-03
+
+[fixed nnz 5 | union | J=pattern]  threads 4   pattern nnz 1709329 (12.9/row)   final nnz 1709329 (12.9/row)   map nnz after filtration 228047
+  phase                        min        median   of total         reps
+  pattern merge           60.96 ms      60.96 ms     10.4 %       5 reps      0.0 % spr
+  pattern filter          60.45 ms      60.45 ms     10.3 %       5 reps      0.0 % spr
+  pattern extend          18.82 ms      18.82 ms      3.2 %       5 reps      0.0 % spr
+  map                    437.20 ms     449.40 ms     74.7 %       5 reps     29.2 % spr
+  post filtration          3.07 ms       3.20 ms      0.5 %       5 reps     12.2 % spr
+  TOTAL (measured)       584.96 ms     605.59 ms    100.0 %       5 reps     12.5 % spr
+  (sum of phases)        580.49 ms   delta vs measured total: -0.8 %
+  map internals (share of map thread-time):  symbolic 18.2% | rhs 3.1% | submatrix 24.7% | solve 54.0%
+  local problems: rows 132300, mean |I| 12.9 (max 20), mean |J| 46.1 (max 124)
+  least squares work: 2.1 GFLOP over 437.2 ms = 4.91 GFLOP/s
+  accuracy: ||N A_k - A_0||_F / ||A_0||_F  exact 1.5940e-02   from QR residual 9.7361e-03   (QR value understates by 38.9%)
+CSV,fixed nnz 5,union,pattern,4,pattern_merge,60.9577
+CSV,fixed nnz 5,union,pattern,4,pattern_filter,60.4453
+CSV,fixed nnz 5,union,pattern,4,pattern_extend,18.8180
+CSV,fixed nnz 5,union,pattern,4,map,437.1953
+CSV,fixed nnz 5,union,pattern,4,post_filtration,3.0690
+CSV,fixed nnz 5,union,pattern,4,total,584.9601
+CSVACC,fixed nnz 5,union,pattern,4,1709329,1.593961e-02,9.736145e-03
+
+================ threads: 8 ================
+# threads 8, NOT pinned - run under `numactl --cpunodebind=0 --membind=0` for a scaling curve that means anything
+
+[column 0.8 | union | J=pattern]  threads 8   pattern nnz 606522 (4.6/row)   final nnz 606522 (4.6/row)   map nnz after filtration 164879
+  phase                        min        median   of total         reps
+  pattern merge           42.95 ms      42.95 ms     31.4 %       5 reps      0.0 % spr
+  pattern filter          17.59 ms      17.59 ms     12.9 %       5 reps      0.0 % spr
+  pattern extend           6.76 ms       6.76 ms      4.9 %       5 reps      0.0 % spr
+  map                     58.59 ms      62.80 ms     42.9 %       5 reps     14.3 % spr
+  post filtration          1.43 ms       1.94 ms      1.0 %       5 reps     44.4 % spr
+  TOTAL (measured)       136.69 ms     137.76 ms    100.0 %       5 reps     11.9 % spr
+  (sum of phases)        127.32 ms   delta vs measured total: -6.9 %
+  map internals (share of map thread-time):  symbolic 11.3% | rhs 11.6% | submatrix 41.1% | solve 36.0%
+  local problems: rows 132300, mean |I| 4.6 (max 22), mean |J| 7.7 (max 57)
+  least squares work: 0.1 GFLOP over 58.6 ms = 0.98 GFLOP/s
+  accuracy: ||N A_k - A_0||_F / ||A_0||_F  exact 2.0201e-02   from QR residual 3.7424e-03   (QR value understates by 81.5%)
+CSV,column 0.8,union,pattern,8,pattern_merge,42.9500
+CSV,column 0.8,union,pattern,8,pattern_filter,17.5930
+CSV,column 0.8,union,pattern,8,pattern_extend,6.7636
+CSV,column 0.8,union,pattern,8,map,58.5888
+CSV,column 0.8,union,pattern,8,post_filtration,1.4259
+CSV,column 0.8,union,pattern,8,total,136.6858
+CSVACC,column 0.8,union,pattern,8,606522,2.020085e-02,3.742441e-03
+
+[fixed nnz 5 | union | J=pattern]  threads 8   pattern nnz 1709329 (12.9/row)   final nnz 1709329 (12.9/row)   map nnz after filtration 228047
+  phase                        min        median   of total         reps
+  pattern merge           51.63 ms      51.63 ms     10.3 %       5 reps      0.0 % spr
+  pattern filter          39.10 ms      39.10 ms      7.8 %       5 reps      0.0 % spr
+  pattern extend          13.70 ms      13.70 ms      2.7 %       5 reps      0.0 % spr
+  map                    362.65 ms     383.96 ms     72.1 %       5 reps      8.5 % spr
+  post filtration          2.10 ms       2.11 ms      0.4 %       5 reps     14.2 % spr
+  TOTAL (measured)       502.87 ms     513.82 ms    100.0 %       5 reps     11.8 % spr
+  (sum of phases)        469.18 ms   delta vs measured total: -6.7 %
+  map internals (share of map thread-time):  symbolic 15.8% | rhs 2.7% | submatrix 22.7% | solve 58.8%
+  local problems: rows 132300, mean |I| 12.9 (max 20), mean |J| 46.1 (max 124)
+  least squares work: 2.1 GFLOP over 362.7 ms = 5.92 GFLOP/s
+  accuracy: ||N A_k - A_0||_F / ||A_0||_F  exact 1.5940e-02   from QR residual 9.7361e-03   (QR value understates by 38.9%)
+CSV,fixed nnz 5,union,pattern,8,pattern_merge,51.6345
+CSV,fixed nnz 5,union,pattern,8,pattern_filter,39.1016
+CSV,fixed nnz 5,union,pattern,8,pattern_extend,13.6958
+CSV,fixed nnz 5,union,pattern,8,map,362.6536
+CSV,fixed nnz 5,union,pattern,8,post_filtration,2.0977
+CSV,fixed nnz 5,union,pattern,8,total,502.8735
+CSVACC,fixed nnz 5,union,pattern,8,1709329,1.593961e-02,9.736145e-03
+
+================ threads: 16 ================
+# threads 16, NOT pinned - run under `numactl --cpunodebind=0 --membind=0` for a scaling curve that means anything
+
+[column 0.8 | union | J=pattern]  threads 16   pattern nnz 606522 (4.6/row)   final nnz 606522 (4.6/row)   map nnz after filtration 164879
+  phase                        min        median   of total         reps
+  pattern merge           41.04 ms      41.04 ms     14.2 %       5 reps      0.0 % spr
+  pattern filter          18.63 ms      18.63 ms      6.5 %       5 reps      0.0 % spr
+  pattern extend           5.94 ms       5.94 ms      2.1 %       5 reps      0.0 % spr
+  map                     57.80 ms      69.10 ms     20.0 %       5 reps     37.8 % spr
+  post filtration          4.09 ms       6.72 ms      1.4 %       5 reps    133.9 % spr
+  TOTAL (measured)       288.36 ms     345.36 ms    100.0 %       5 reps     26.3 % spr
+  (sum of phases)        127.50 ms   delta vs measured total: -55.8 %
+  map internals (share of map thread-time):  symbolic 10.4% | rhs 11.2% | submatrix 46.8% | solve 31.7%
+  local problems: rows 132300, mean |I| 4.6 (max 22), mean |J| 7.7 (max 57)
+  least squares work: 0.1 GFLOP over 57.8 ms = 0.99 GFLOP/s
+  accuracy: ||N A_k - A_0||_F / ||A_0||_F  exact 2.0201e-02   from QR residual 3.7424e-03   (QR value understates by 81.5%)
+CSV,column 0.8,union,pattern,16,pattern_merge,41.0377
+CSV,column 0.8,union,pattern,16,pattern_filter,18.6303
+CSV,column 0.8,union,pattern,16,pattern_extend,5.9448
+CSV,column 0.8,union,pattern,16,map,57.7993
+CSV,column 0.8,union,pattern,16,post_filtration,4.0909
+CSV,column 0.8,union,pattern,16,total,288.3611
+CSVACC,column 0.8,union,pattern,16,606522,2.020085e-02,3.742441e-03
+
+[fixed nnz 5 | union | J=pattern]  threads 16   pattern nnz 1709329 (12.9/row)   final nnz 1709329 (12.9/row)   map nnz after filtration 228047
+  phase                        min        median   of total         reps
+  pattern merge          104.34 ms     104.34 ms     12.8 %       5 reps      0.0 % spr
+  pattern filter          44.96 ms      44.96 ms      5.5 %       5 reps      0.0 % spr
+  pattern extend          26.54 ms      26.54 ms      3.3 %       5 reps      0.0 % spr
+  map                    518.94 ms     563.12 ms     63.7 %       5 reps     49.7 % spr
+  post filtration          4.60 ms       5.36 ms      0.6 %       5 reps     18.2 % spr
+  TOTAL (measured)       815.22 ms     827.09 ms    100.0 %       3 reps      3.3 % spr
+  (sum of phases)        699.38 ms   delta vs measured total: -14.2 %
+  map internals (share of map thread-time):  symbolic 15.3% | rhs 2.6% | submatrix 24.1% | solve 58.0%
+  local problems: rows 132300, mean |I| 12.9 (max 20), mean |J| 46.1 (max 124)
+  least squares work: 2.1 GFLOP over 518.9 ms = 4.14 GFLOP/s
+  accuracy: ||N A_k - A_0||_F / ||A_0||_F  exact 1.5940e-02   from QR residual 9.7361e-03   (QR value understates by 38.9%)
+CSV,fixed nnz 5,union,pattern,16,pattern_merge,104.3404
+CSV,fixed nnz 5,union,pattern,16,pattern_filter,44.9573
+CSV,fixed nnz 5,union,pattern,16,pattern_extend,26.5398
+CSV,fixed nnz 5,union,pattern,16,map,518.9412
+CSV,fixed nnz 5,union,pattern,16,post_filtration,4.5996
+CSV,fixed nnz 5,union,pattern,16,total,815.2236
+CSVACC,fixed nnz 5,union,pattern,16,1709329,1.593961e-02,9.736145e-03

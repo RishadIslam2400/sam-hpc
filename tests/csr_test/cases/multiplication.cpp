@@ -23,7 +23,7 @@ void testVectorMultiplication() {
         spmv(1, sparseMatrix, vec, 0, result);
 
         // method
-        assertEquals<std::vector<int>>(manualResult, result, "Incorrect matrix-vector multiplication result");
+        assertEquals(manualResult, result, "Incorrect matrix-vector multiplication result");
     }
 
     std::cout << " OK" << std::endl;

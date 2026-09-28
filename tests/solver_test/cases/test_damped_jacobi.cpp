@@ -20,7 +20,7 @@ void test_jacobi_constructor() {
     // The diagonal of A is [4, 4, 4].
     // The inverse diagonal should be [0.25, 0.25, 0.25].
     std::vector<double> inverseDiag = {0.25, 0.25, 0.25};
-    assertEquals<std::vector<double>>(inverseDiag, smoother.dia, "Diagonal inverse not correct!");
+    assertEquals(inverseDiag, smoother.dia, "Diagonal inverse not correct!");
 
     std::cout<< "OK" << std::endl;
 }
@@ -48,7 +48,7 @@ void test_jacobi_presmoothing() {
     smoother.apply_pre(A, rhs, x, tmp);
 
     std::vector<double> x_new = {0.25, 0.25, 0.25};
-    assertEquals<std::vector<double>>(x_new, x, "Solution vector is incorrect!");
+    assertEquals(x_new, x, "Solution vector is incorrect!");
 
     std::cout << "OK" << std::endl;
 }
@@ -76,7 +76,7 @@ void test_jacobi_postsmoothing() {
     smoother.apply_post(A, rhs, x, tmp);
 
     std::vector<double> x_new = {0.25, 0.25, 0.25};
-    assertEquals<std::vector<double>>(x_new, x, "Solution vector is incorrect!");
+    assertEquals(x_new, x, "Solution vector is incorrect!");
 
     std::cout << "OK" << std::endl;
 }
@@ -101,7 +101,7 @@ void test_direct_jacobi() {
     smoother.apply(A, rhs, x);
 
     std::vector<double> x_new = {0.5, 0.5, 0.5};
-    assertEquals<std::vector<double>>(x_new, x, "Solution vector is incorrect!");
+    assertEquals(x_new, x, "Solution vector is incorrect!");
 
     std::cout << "OK" << std::endl;
 }

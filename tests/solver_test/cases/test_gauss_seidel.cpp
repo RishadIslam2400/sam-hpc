@@ -24,7 +24,7 @@ void test_gauss_siedel_presmoothing_serial() {
     smoother.apply_pre(A, rhs, x, tmp);
 
     std::vector<double> x_new = {0.5, 0.625, 0.78125};
-    assertEquals<std::vector<double>>(x_new, x, "Solution vector is incorrect!");
+    assertEquals(x_new, x, "Solution vector is incorrect!");
 
     std::cout << "OK" << std::endl;
 }
@@ -51,7 +51,7 @@ void test_gauss_siedel_postsmoothing_serial() {
     smoother.apply_post(A, rhs, x, tmp);
 
     std::vector<double> x_new = {0.78125, 0.625, 0.5};
-    assertEquals<std::vector<double>>(x_new, x, "Solution vector is incorrect!");
+    assertEquals(x_new, x, "Solution vector is incorrect!");
 
     std::cout << "OK" << std::endl;    
 }
@@ -80,7 +80,7 @@ void test_gauss_siedel_direct_sovler_serial() {
     smoother.apply(A, rhs, x, tmp);
 
     std::vector<double> x_new = {0.900390625, 0.8203125, 0.78125};
-    assertEquals<std::vector<double>>(x_new, x, "Solution vector is incorrect!");
+    assertEquals(x_new, x, "Solution vector is incorrect!");
 
     std::cout << "OK" << std::endl;
 }
@@ -107,7 +107,7 @@ void test_gauss_siedel_presmoothing_parallel() {
     smoother.apply_pre(A, rhs, x, tmp);
 
     std::vector<double> x_new = {0.5, 0.625, 0.78125};
-    assertEquals<std::vector<double>>(x_new, x, "Solution vector is incorrect!");
+    assertEquals(x_new, x, "Solution vector is incorrect!");
 
     std::cout << "OK" << std::endl;
 }
@@ -134,7 +134,7 @@ void test_gauss_siedel_postsmoothing_parallel() {
     smoother.apply_pre(A, rhs, x, tmp);
 
     std::vector<double> x_new = {0.5, 0.625, 0.78125};
-    assertEquals<std::vector<double>>(x_new, x, "Solution vector is incorrect!");
+    assertEquals(x_new, x, "Solution vector is incorrect!");
 
     std::cout << "OK" << std::endl;
 }
@@ -163,7 +163,7 @@ void test_gauss_siedel_direct_sovler_parallel() {
     smoother.apply(A, rhs, x, tmp);
 
     std::vector<double> x_new = {0.900390625, 0.8203125, 0.78125};
-    assertEquals<std::vector<double>>(x_new, x, "Solution vector is incorrect!");
+    assertEquals(x_new, x, "Solution vector is incorrect!");
 
     std::cout << "OK" << std::endl;
     

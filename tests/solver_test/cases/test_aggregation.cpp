@@ -34,7 +34,7 @@ void test_basic_aggregation() {
     // - Nodes 3, 4, 5 are "removed" as they have no strong connections.
     std::vector<ptrdiff_t> expected_id = {0, 0, 0, -2, -2, -2};
     assertEquals<size_t>(1, aggs.count, "Aggregate count is incorrect!");
-    assertEquals<std::vector<ptrdiff_t>>(expected_id, aggs.id, "Aggregate ids incorrect!");
+    assertEquals(expected_id, aggs.id, "Aggregate ids incorrect!");
 
     std::cout << "OK" << std::endl;
 }
@@ -58,7 +58,7 @@ void test_multiple_aggregates() {
     // - Three aggregates are formed: {0, 1}, {2, 3}, and {4, 5}.
     std::vector<ptrdiff_t> expected_id = {0, 0, 1, 1, 2, 2};
     assertEquals<size_t>(3, aggs.count, "Aggregate count is incorrect!");
-    assertEquals<std::vector<ptrdiff_t>>(expected_id, aggs.id, "Aggregate ids are incorrect!");
+    assertEquals(expected_id, aggs.id, "Aggregate ids are incorrect!");
 
     std::cout << "OK" << std::endl;
 }
@@ -102,7 +102,7 @@ void test_remove_small_aggregates() {
     // Expected outcome: 4 aggregates remain.
     std::vector<ptrdiff_t> expected_id = {-2, -2, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3};
     assertEquals<size_t>(4, aggs.count, "Aggregate count is incorrect!");
-    assertEquals<std::vector<ptrdiff_t>>(expected_id, aggs.id, "Aggregate ids are incorrect!");
+    assertEquals(expected_id, aggs.id, "Aggregate ids are incorrect!");
     std::cout << "OK" << std::endl;
 }
 
