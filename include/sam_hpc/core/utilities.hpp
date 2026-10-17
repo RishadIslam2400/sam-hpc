@@ -9,7 +9,10 @@
 #include <string>
 #include <vector>
 
-// N-dimensional dense matrix
+/// Fixed-size dense N-dimensional array stored in contiguous row-major order.
+///
+/// The constructor accepts one extent per dimension. The number of supplied
+/// indices is checked at compile time, and elements are value-initialized.
 template <class T, int N>
 class multiArray {
   static_assert(N > 0, "Wrong number of dimensions");
@@ -21,7 +24,10 @@ class multiArray {
     buf.resize(init(n...));
   }
 
+  /// Returns the total number of elements.
   size_t size() const { return buf.size(); }
+
+  /// Returns the row-major stride for dimension `i`.
   int stride(int i) const { return strides[i]; }
 
   template <class... I>
@@ -36,22 +42,23 @@ class multiArray {
     return buf[index(i...)];
   }
 
+  /// Returns a pointer to the underlying contiguous storage.
   const T* data() const { return buf.data(); }
 
  private:
   std::array<int, N> strides;
   std::vector<T> buf;
 
-  // recursive index function
+  // Converts a multidimensional index to a row-major offset.
   template <class... I>
   int index(int i, I... tail) const {
     return strides[N - sizeof...(I) - 1] * i + index(tail...);
   }
 
-  // base case with one parameter
+  // Final index contribution.
   int index(int i) const { return strides[N - 1] * i; }
 
-  // recursive init function
+  // Initializes strides from the last dimension and returns the total size.
   template <class... I>
   int init(int i, I... tail) {
     int size = init(tail...);
@@ -59,13 +66,17 @@ class multiArray {
     return i * size;
   }
 
-  // base case
+  // The last dimension has unit stride.
   int init(int i) {
     strides[N - 1] = 1;
     return i;
   }
 };
 
+/// Fixed-capacity FIFO buffer that overwrites the oldest value when full.
+///
+/// Elements are indexed from oldest to newest. The capacity must be nonzero,
+/// and indexing requires a valid position among the stored elements.
 template <class T>
 class circularBuffer {
  public:
@@ -98,11 +109,15 @@ class circularBuffer {
   std::vector<T> buf;
 };
 
+/// Returns a roundoff tolerance scaled by `n` machine epsilons for type `T`.
 template <class T>
 T eps(size_t n) {
   return 2 * std::numeric_limits<T>::epsilon() * n;
 }
 
+/// Formats a byte count using binary units and two decimal places.
+///
+/// Unit suffixes range from bytes through terabytes.
 inline std::string human_readable_memory(size_t bytes) {
   static const char* suffix[] = {"B", "KB", "MB", "GB", "TB"};
 

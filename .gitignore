@@ -1,15 +1,8 @@
-# Build trees
 /build*/
 *.o
-
-# Matrix sets (tens of GB); see README.md for where they come from
 /data/
-
-# Local tooling
 .vscode/
 nohup.out
 CLAUDE*
-
-# Output of scripts/run_benchmark.sh; move a run into results/ to keep it
 /top_opt_results_*.txt
 /top_opt_results_*.csv
