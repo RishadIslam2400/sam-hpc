@@ -6,380 +6,311 @@
 #include "sam_hpc/core/CSRMatrix.hpp"
 #include "sam_hpc/core/linearAlgebra.hpp"
 
+/// Algebraic multigrid hierarchy for a square CSR system matrix.
+/// \tparam T Value type of matrices and vectors.
+/// \tparam Coarsening Coarsening policy used to build transfer operators.
+/// \tparam Relax Relaxation policy used on non-direct levels.
 template <typename T, template <class> class Coarsening, template <class> class Relax>
 class amg {
 public:
-    typedef Coarsening<T> coarsening_type;
-    typedef Relax<T> relax_type;
+  typedef Coarsening<T> coarsening_type;
+  typedef Relax<T> relax_type;
 
-    // Parameters of the method
-    /**
-     * the params struct contains paramters for each component of the method as well as
-     * some universal parameters
-     */
-    struct params {
-        typedef typename coarsening_type::params coarsening_params;
-        typedef typename relax_type::params relax_params;
+  /// AMG and component-specific parameters.
+  struct params {
+    typedef typename coarsening_type::params coarsening_params;
+    typedef typename relax_type::params relax_params;
 
-        coarsening_params coarsening; // Coarsening parameters
-        relax_params relax;          // Relaxation parameters
+    coarsening_params coarsening;
+    relax_params relax;
 
-        // Specifies when level is coarse enough to be solved directly
-        /**
-         * If number  of variables at a next level in the hierarchy becomes lower than this
-         * threshold, then the hierarchy construction is stopped and the linear system is solved
-         * directly at this level
-         */
-        unsigned coarse_enough;
+    /// Stop coarsening when the next level has at most this many rows.
+    unsigned coarse_enough;
 
-        // Use direct solver at the coarse level.
-        /**
-         * When set the coarsest level is solved with a direct solver. Otherwise a smoother is used as a solver
-         */
-        bool direct_coarse;
+    /// Use a direct solver when coarsening reaches `coarse_enough`.
+    bool direct_coarse;
 
-        // Maximum number of levels
-        /**
-         * If this number is reached while the size of the last level is greater than coarse_enough,
-         * then the corasest level will not be solved exactly, but will use a smoother
-         */
-        unsigned max_levels;
+    /// Maximum hierarchy depth.
+    unsigned max_levels;
 
-        // Number of pre-relxations
-        unsigned npre;
+    /// Number of pre-smoothing steps per cycle.
+    unsigned npre;
 
-        // Number of post-relaxations
-        unsigned npost;
+    /// Number of post-smoothing steps per cycle.
+    unsigned npost;
 
-        // Number of cycles(1 for V-cycle, 2 for W-cycle, etc.).
-        unsigned ncycle;
+    /// Number of recursive visits at each non-coarsest level.
+    unsigned ncycle;
 
-        // Number of cycles to make as part of preconditioning
-        unsigned pre_cycles;
+    /// Number of cycles performed by apply(); zero makes apply() the identity.
+    unsigned pre_cycles;
 
-        // Keep matrices in internal format to allow for quick rebuild of the hierarchy
-        bool allow_rebuild;
+    /// Retain transfer operators so rebuild() can reuse the hierarchy structure.
+    bool allow_rebuild;
 
-        params() : coarse_enough(skyline_lu<T>::coarse_enough()),
-                   direct_coarse(true),
-                   max_levels(std::numeric_limits<unsigned>::max()),
-                   npre(1), npost(1), ncycle(1), pre_cycles(1),
-                   allow_rebuild(true)
-        { }
-    } prm;
+    params() : coarse_enough(skyline_lu<T>::coarse_enough()), direct_coarse(true),
+               max_levels(std::numeric_limits<unsigned>::max()), npre(1), npost(1),
+               ncycle(1), pre_cycles(1), allow_rebuild(true) { }
+  } prm;
 
-    // Builds the AMG hierarchy for the system matrix
-    /**
-     * The input matrix is copied here and is safe to delete afterwards
-     * 
-     * \param A The system matrix. This is a csr matrix
-     * \param p AMG parameters
-     */
-    amg(const CSRMatrix<T>& M, const params& p = params()) : prm(p) {
-        auto A = std::make_shared<CSRMatrix<T>>(M);
-        sortRows(*A);
-        do_init(A);
+  /// Builds the hierarchy from a copied, row-sorted matrix.
+  /// @param M Square system matrix in CSR format.
+  /// @param p AMG parameters.
+  amg(const csr::CSRMatrix<T>& M, const params& p = params()) : prm(p) {
+    auto A = std::make_shared<csr::CSRMatrix<T>>(M);
+    A->sortRows();
+    do_init(A);
+  }
+
+  /// Builds the hierarchy without copying the input matrix. The matrix is retained as
+  /// the finest level and must outlive any external mutation that would invalidate the
+  /// hierarchy. Its rows must already be sorted.
+  /// @param A Shared pointer to the square system matrix.
+  /// @param p AMG parameters.
+  amg(std::shared_ptr<csr::CSRMatrix<T>> A, const params &p = params()) : prm(p) {
+    do_init(A);
+  }
+
+  /// Rebuilds the numerical hierarchy using reused transfer operators.
+  /// This requires `allow_rebuild`. Coarse-grid structure is retained, while smoothers,
+  /// direct factors, and Galerkin operators are recomputed. M is copied and sorted.
+  void rebuild(const csr::CSRMatrix<T>& M) {
+    auto A = std::make_shared<csr::CSRMatrix<T>>(M);
+    A->sortRows();
+    rebuild(A);
+  }
+
+  /// Rebuilds from a shared matrix using the existing transfer operators.
+  /// The matrix must have the original dimensions and sorted rows. Only its numerical
+  /// values may differ from the original setup.
+  void rebuild(std::shared_ptr<csr::CSRMatrix<T>> A) {
+    assert(prm.allow_rebuild && "allow_rebuild is not set");
+    assert((A->m_rows == system_matrix().m_rows && A->m_rows == A->m_cols) && "Matrix dimensions differ from original ones!");
+
+    coarsening_type C(prm.coarsening);
+    for (auto & level : levels) {
+      A = level.rebuild(A, C, prm);
     }
+  }
 
-    /// Builds the AMG hierarchy for the system matrix.
-    /**
-     * The shared pointer to the input matrix is passed here. The matrix will not be copied 
-     * and should out-live the amg instance. The matrix should be in CSR format.
-     *
-     * \param A The system matrix.
-     * \param p AMG parameters.
-     */
-    amg(std::shared_ptr<CSRMatrix<T>> A, const params &p = params()) : prm(p) {
-        do_init(A);
+  /// Performs one multigrid cycle from the current solution estimate.
+  /// @param rhs Right-hand side vector.
+  /// @param x Solution vector, updated in place and not resized.
+  void cycle(const std::vector<T> &rhs, std::vector<T> &x) const {
+    cycle(levels.begin(), rhs, x);
+  }
+
+  /// Applies the configured number of cycles from a zero initial guess.
+  /// @param rhs Right-hand side vector.
+  /// @param x Output vector; it must have the system dimension when preconditioning is
+  ///          enabled and is assigned rhs when `pre_cycles` is zero.
+  void apply(const std::vector<T> &rhs, std::vector<T> &x) const {
+    if (prm.pre_cycles) {
+      std::fill(x.begin(), x.end(), T(0));
+      for (unsigned i = 0; i < prm.pre_cycles; ++i)
+        cycle(rhs, x);
+    } else {
+      x = rhs;
     }
+  }
 
-    /// Rebuild the hierarchy using the new system matrix.
-    /**
-     * This requires for prm.allow_rebuild to be set. The transfer
-     * operators created during the initial setup are reused.
-     */
-    void rebuild(const CSRMatrix<T>& M) {
-        auto A = std::make_shared<CSRMatrix<T>>(M);
-        sortRows(*A);
-        rebuild(A);
-    }
+  /// Returns the system matrix from the finest level.
+  std::shared_ptr<csr::CSRMatrix<T>> system_matrix_ptr() const {
+    return levels.front().A;
+  }
 
-    /// Rebuild the hierarchy using the new system matrix.
-    /**
-     * This requires for prm.allow_rebuild to be set. The transfer
-     * operators created during the initial setup are reused.
-     */
-    void rebuild(std::shared_ptr<CSRMatrix<T>> A) {
-        assert(prm.allow_rebuild && "allow_rebuild is not set");
-        assert((A->m_rows == system_matrix().m_rows && A->m_rows == A->m_cols) && "Matrix dimensions differ from original ones!");
-
-        coarsening_type C(prm.coarsening);
-        for (auto & level : levels) {
-            A = level.rebuild(A, C, prm);
-        }
-    }
-
-    /// Performs single V-cycle for the given right-hand side and solution.
-    /**
-     * \param rhs Right-hand side vector.
-     * \param x   Solution vector.
-     */
-    void cycle(const std::vector<T> &rhs, std::vector<T> &x) const {
-        cycle(levels.begin(), rhs, x);
-    }
-
-    /// Performs single V-cycle after clearing x.
-    /**
-     * This is intended for use as a preconditioning procedure.
-     *
-     * \param rhs Right-hand side vector.
-     * \param x   Solution vector.
-     */
-    void apply(const std::vector<T> &rhs, std::vector<T> &x) const {
-        if (prm.pre_cycles) {
-            std::fill(x.begin(), x.end(), T(0));
-            for (unsigned i = 0; i < prm.pre_cycles; ++i)
-                cycle(rhs, x);
-        } else {
-            x = rhs; // not using parallel copy
-        }
-    }
-
-    /// return the system matrix from the finest level
-    std::shared_ptr<CSRMatrix<T>> system_matrix_ptr() const {
-        return levels.front().A;
-    }
-
-    const CSRMatrix<T>& system_matrix() const {
-        return *system_matrix_ptr();
-    }
-
-    // TODO: implement bytes() method
+  const csr::CSRMatrix<T>& system_matrix() const {
+    return *system_matrix_ptr();
+  }
 
 private:
-    struct level {
-        size_t m_rows, m_nonzeros;
+  /// State and operators associated with one hierarchy level.
+  struct level {
+    size_t m_rows, m_nonzeros;
 
-        mutable std::vector<T> f; // rhs vector. Holds the residual from finer levels in coarser levels
-        mutable std::vector<T> u; // solution vector that is interpolated to finer levels
-        mutable std::vector<T> t; // temprary storage
+    // f and u hold coarse-grid residuals and corrections during a cycle.
+    mutable std::vector<T> f;
+    mutable std::vector<T> u;
+    mutable std::vector<T> t;
 
-        std::shared_ptr<CSRMatrix<T>> A; // System matrix for the level
-        std::shared_ptr<CSRMatrix<T>> P; // Prologation operator
-        std::shared_ptr<CSRMatrix<T>> R; // Restriction operator
- 
-        std::shared_ptr<CSRMatrix<T>> bP; // used for rebuilding
-        std::shared_ptr<CSRMatrix<T>> bR; // copies of P and R
- 
-        std::shared_ptr<skyline_lu<T>> solve; 
-        std::shared_ptr<relax_type> relax;
+    std::shared_ptr<csr::CSRMatrix<T>> A;
+    std::shared_ptr<csr::CSRMatrix<T>> P;
+    std::shared_ptr<csr::CSRMatrix<T>> R;
 
-        // todo: implement bytes() method
+    // Aliases retained for numerical rebuilds when enabled.
+    std::shared_ptr<csr::CSRMatrix<T>> bP;
+    std::shared_ptr<csr::CSRMatrix<T>> bR;
 
-        level() : m_rows(0), m_nonzeros(0) {}
-        level(std::shared_ptr<CSRMatrix<T>>& A, params& prm) : m_rows(A->m_rows), m_nonzeros(A->m_nnz), f(m_rows, T(0)), u(m_rows, T(0)), t(m_rows, T(0)) {
-            this->A = A;
-            relax = std::make_shared<relax_type>(*A, prm.relax);
-        }
+    std::shared_ptr<skyline_lu<T>> solve;
+    std::shared_ptr<relax_type> relax;
 
-        // Performs one step of coarsening
-        std::shared_ptr<CSRMatrix<T>> step_down(std::shared_ptr<CSRMatrix<T>> A, coarsening_type& C, bool allow_rebuild) {
-            std::shared_ptr<CSRMatrix<T>> P, R;
-
-            try {
-                // Generate the transfer operators
-                std::tie(P, R) = C.transfer_operators(*A);
-            } catch (const std::runtime_error& e) {
-                return std::shared_ptr<CSRMatrix<T>>();
-            }
-
-            sortRows(*P);
-            sortRows(*R);
-
-            if (allow_rebuild) {
-                bP = P;
-                bR = R;
-            }
-
-            this->P = P;
-            this->R = R;
-
-            // Compute the system matrix from the next coarser level
-            A = C.coarse_operator(*A, *P, *R);
-            sortRows(*A);
-
-            return A;
-        }
-
-        // Coarsest grid
-        void create_coarse(std::shared_ptr<CSRMatrix<T>> A, bool single_level) {
-            m_rows = A->m_rows;
-            m_nonzeros = A->m_nnz;
-
-            u.resize(m_rows, T(0));
-            f.resize(m_rows, T(0));
-
-            // direct solver for coarsest grid
-            solve = std::make_shared<skyline_lu<T>>(*A);
-            if (single_level) {
-                this->A = A;
-            }
-        }
-
-        std::shared_ptr<CSRMatrix<T>> rebuild(std::shared_ptr<CSRMatrix<T>> A, const coarsening_type& C, const params& prm) {
-            if (this->A) {
-                this->A = A;
-            }
-
-            if (relax) {
-                relax = std::make_shared<relax_type>(*A, prm.relax);
-            }
-
-            if (solve) {
-                solve = std::make_shared<skyline_lu<T>>(*A);
-            }
-
-            if (bP && bR) {
-                A = C.coarse_operator(*A, *bP, *bR);
-                sortRows(*A);
-            }
-
-            return A;
-        }
-
-        size_t rows() const {
-            return m_rows;
-        }
-
-        size_t nonzeros() const {
-            return m_nonzeros;
-        }
-    };
-
-    typedef typename std::list<level>::const_iterator level_iterator;
-    std::list<level> levels;
-
-    // Set up the multigrid grid hierarchy
-    void do_init(std::shared_ptr<CSRMatrix<T>> A) {
-        assert(A->m_rows == A->m_cols && "Matrix should be square!");
-        bool direct_coarse_solve = true;
-
-        coarsening_type C(prm.coarsening);
-
-        while(A->m_rows > prm.coarse_enough) {
-            levels.push_back(level(A, prm));
-
-            if (levels.size() >= prm.max_levels)
-                break;
-
-            // calculate the transfer operators and the coarse grid system matrix for next level
-            A = levels.back().step_down(A, C, prm.allow_rebuild);
-            if (!A) {
-                // Zero-sized coarse level. Probably the system matrix on
-                // this level is diagonal, should be easily solvable with a
-                // couple of smoother iterations.
-                direct_coarse_solve = false;
-                break;
-            }
-        }
-
-        // For early exit the final coarsest grid can't be solved directly
-        if (!A || A->m_rows > prm.coarse_enough) {
-            // The coarse matrix is still to be solved directly
-            direct_coarse_solve = false;
-        }
-
-        if (direct_coarse_solve) {
-            if (prm.direct_coarse) {
-                level l;
-                // create the specialized coarsest level
-                l.create_coarse(A, levels.empty());
-                levels.push_back(l);
-            } else {
-                levels.push_back(level(A, prm));
-            }
-        }
+    level() : m_rows(0), m_nonzeros(0) {}
+    /// Constructs a level solved by relaxation.
+    level(std::shared_ptr<csr::CSRMatrix<T>>& A, params& prm) 
+      : m_rows(A->m_rows), m_nonzeros(A->m_nnz), f(m_rows, T(0)), u(m_rows, T(0)), t(m_rows, T(0))
+    {
+      this->A = A;
+      relax = std::make_shared<relax_type>(*A, prm.relax);
     }
 
-    void cycle(level_iterator lvl, const std::vector<T>& rhs, std::vector<T>& x) const {
-        level_iterator nxt = lvl, end = levels.end();
-        ++nxt;
+    /// Builds transfer operators and returns the next Galerkin operator.
+    std::shared_ptr<csr::CSRMatrix<T>> step_down(std::shared_ptr<csr::CSRMatrix<T>> A,
+                                                 coarsening_type& C, bool allow_rebuild)
+    {
+      std::shared_ptr<csr::CSRMatrix<T>> P, R;
 
-        if (nxt == end) {
-            if (lvl->solve) {
-                (*lvl->solve)(rhs, x);
+      try {
+        std::tie(P, R) = C.transfer_operators(*A);
+      } catch (const std::runtime_error& e) {
+        // A null result indicates that the coarsening policy could not produce another
+        // level; in that case this level remains the coarsest relaxed level.
+        return std::shared_ptr<csr::CSRMatrix<T>>();
+      }
 
-            } else {
-                for(size_t i = 0; i < prm.npre;  ++i)
-                    lvl->relax->apply_pre(*lvl->A, rhs, x, lvl->t);
-                for(size_t i = 0; i < prm.npost; ++i)
-                    lvl->relax->apply_post(*lvl->A, rhs, x, lvl->t);
-            }
-        } else {
-            // determines V or W cycle
-            for (size_t j = 0; j < prm.ncycle; ++j) {
-                for(size_t i = 0; i < prm.npre; ++i)
-                    lvl->relax->apply_pre(*lvl->A, rhs, x, lvl->t); // pre-smoothing
+      P->sortRows();
+      R->sortRows();
 
-                residual(rhs, *lvl->A, x, lvl->t); // calculate residual
-                spmv(T(1), *lvl->R, lvl->t, T(0), nxt->f); //  restrict the residual
+      if (allow_rebuild) {
+        bP = P;
+        bR = R;
+      }
 
-                // recursive call to apply multigrid step to the next level
-                std::fill(nxt->u.begin(), nxt->u.end(), T(0)); // parallel execution?
-                cycle(nxt, nxt->f, nxt->u);
+      this->P = P;
+      this->R = R;
 
-                // Apply prolongation operator
-                spmv(T(1), *lvl->P, nxt->u, T(1), x);
+      A = C.coarse_operator(*A, *P, *R);
+      A->sortRows();
 
-                // post smoothing
-                for(size_t i = 0; i < prm.npost; ++i)
-                    lvl->relax->apply_post(*lvl->A, rhs, x, lvl->t);
-            }
-        }
+      return A;
     }
 
-    template <class B, template <class> class C, template <class> class R>
-    friend std::ostream& operator<<(std::ostream &os, const amg<B, C, R> &a);
+    /// Makes this level the direct-solve coarsest level.
+    void create_coarse(std::shared_ptr<csr::CSRMatrix<T>> A, bool single_level) {
+      m_rows = A->m_rows;
+      m_nonzeros = A->m_nnz;
+
+      u.resize(m_rows, T(0));
+      f.resize(m_rows, T(0));
+
+      solve = std::make_shared<skyline_lu<T>>(*A);
+      if (single_level) {
+        this->A = A;
+      }
+    }
+
+    /// Rebuilds this level's numerical data and returns the next coarse matrix.
+    std::shared_ptr<csr::CSRMatrix<T>> rebuild(std::shared_ptr<csr::CSRMatrix<T>> A,
+                                               const coarsening_type& C, const params& prm)
+    {
+      if (this->A) {
+        this->A = A;
+      }
+
+      if (relax) {
+        relax = std::make_shared<relax_type>(*A, prm.relax);
+      }
+
+      if (solve) {
+        solve = std::make_shared<skyline_lu<T>>(*A);
+      }
+
+      if (bP && bR) {
+        A = C.coarse_operator(*A, *bP, *bR);
+        A->sortRows();
+      }
+
+      return A;
+    }
+
+    size_t rows() const {
+      return m_rows;
+    }
+
+    size_t nonzeros() const {
+      return m_nonzeros;
+    }
+  };
+
+  typedef typename std::list<level>::const_iterator level_iterator;
+  std::list<level> levels;
+
+  /// Builds the hierarchy from finest to coarsest.
+  void do_init(std::shared_ptr<csr::CSRMatrix<T>> A) {
+    assert(A->m_rows == A->m_cols && "Matrix should be square!");
+    bool direct_coarse_solve = true;
+
+    coarsening_type C(prm.coarsening);
+
+    while(A->m_rows > prm.coarse_enough) {
+      levels.push_back(level(A, prm));
+
+      if (levels.size() >= prm.max_levels)
+        break;
+
+      A = levels.back().step_down(A, C, prm.allow_rebuild);
+      if (!A) {
+        direct_coarse_solve = false;
+        break;
+      }
+    }
+
+    if (!A || A->m_rows > prm.coarse_enough) {
+      direct_coarse_solve = false;
+    }
+
+    if (direct_coarse_solve) {
+      if (prm.direct_coarse) {
+        level l;
+        l.create_coarse(A, levels.empty());
+        levels.push_back(l);
+      } else {
+        levels.push_back(level(A, prm));
+      }
+    }
+  }
+
+  /// Recursively applies one multigrid cycle at level `lvl`.
+  void cycle(level_iterator lvl, const std::vector<T>& rhs, std::vector<T>& x) const {
+    level_iterator nxt = lvl, end = levels.end();
+    ++nxt;
+
+    if (nxt == end) {
+      if (lvl->solve) {
+        (*lvl->solve)(rhs, x);
+      } else {
+        for(size_t i = 0; i < prm.npre;  ++i)
+          lvl->relax->apply_pre(*lvl->A, rhs, x, lvl->t);
+        for(size_t i = 0; i < prm.npost; ++i)
+          lvl->relax->apply_post(*lvl->A, rhs, x, lvl->t);
+      }
+    } else {
+      for (size_t j = 0; j < prm.ncycle; ++j) {
+        for(size_t i = 0; i < prm.npre; ++i)
+          lvl->relax->apply_pre(*lvl->A, rhs, x, lvl->t);
+
+        residual(rhs, *lvl->A, x, lvl->t);
+        spmv(T(1), *lvl->R, lvl->t, T(0), nxt->f);
+
+        // Solve the coarse correction from zero before prolongating it.
+        std::fill(nxt->u.begin(), nxt->u.end(), T(0));
+        cycle(nxt, nxt->f, nxt->u);
+
+        spmv(T(1), *lvl->P, nxt->u, T(1), x);
+
+        for(size_t i = 0; i < prm.npost; ++i)
+          lvl->relax->apply_post(*lvl->A, rhs, x, lvl->t);
+      }
+    }
+  }
+
+  template <class B, template <class> class C, template <class> class R>
+  friend std::ostream& operator<<(std::ostream &os, const amg<B, C, R> &a);
 };
 
-/// Sends information about the AMG hierarchy to output stream.
+/// Writes an AMG hierarchy summary to an output stream.
+/// This is currently a no-op.
 template <class B, template <class> class C, template <class> class R>
 std::ostream& operator<<(std::ostream &os, const amg<B, C, R> &a) {
-    // Not required for now
-    /**
-     * typedef typename amg<B, C, R>::level level;
-    ios_saver ss(os);
-
-    size_t sum_dof = 0;
-    size_t sum_nnz = 0;
-    size_t sum_mem = 0;
-
-    for(const level &lvl : a.levels) {
-        sum_dof += lvl.rows();
-        sum_nnz += lvl.nonzeros();
-        sum_mem += lvl.bytes();
-    }
-
-    os << "Number of levels:    "   << a.levels.size()
-        << "\nOperator complexity: " << std::fixed << std::setprecision(2)
-        << 1.0 * sum_nnz / a.levels.front().nonzeros()
-        << "\nGrid complexity:     " << std::fixed << std::setprecision(2)
-        << 1.0 * sum_dof / a.levels.front().rows()
-        << "\nMemory footprint:    " << human_readable_memory(sum_mem)
-        << "\n\n"
-           "level     unknowns       nonzeros      memory\n"
-           "---------------------------------------------\n";
-
-    size_t depth = 0;
-    for(const level &lvl : a.levels) {
-        os << std::setw(5)  << depth++
-            << std::setw(13) << lvl.rows()
-            << std::setw(15) << lvl.nonzeros()
-            << std::setw(12) << human_readable_memory(lvl.bytes())
-            << " (" << std::setw(5) << std::fixed << std::setprecision(2)
-            << 100.0 * lvl.nonzeros() / sum_nnz
-            << "%)" << std::endl;
-    }
-    */
-    return os;
+  (void)a;
+  return os;
 }

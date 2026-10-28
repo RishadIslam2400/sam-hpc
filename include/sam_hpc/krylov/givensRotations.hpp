@@ -2,23 +2,9 @@
 
 #include <cmath>
 
-/**
- * @brief Computes the components of a Givens plane rotation.
- *
- * This function calculates the cosine (cs) and sine (sn) parameters for a
- * Givens rotation matrix. The goal is to create a rotation that, when applied
- * to the vector [dx, dy], will zero out the second component (dy).
- *
- * The implementation includes checks to maintain numerical stability,
- * especially when one of the input values is much larger than the other, to
- * avoid overflow or division by a very small number.
- *
- * @tparam T The floating-point type (e.g., float, double).
- * @param dx The first component of the vector to be rotated.
- * @param dy The second component of the vector to be rotated.
- * @param cs [out] A reference to store the computed cosine component.
- * @param sn [out] A reference to store the computed sine component.
- */
+/// Computes a Givens rotation that eliminates the second component.
+/// The coefficients are normalized and computed using the larger-magnitude
+/// input as the divisor to improve numerical stability.
 template <typename T>
 inline void generatePlaneRotation(T dx, T dy, T& cs, T& sn) {
   if (dy == T(0)) {
@@ -35,6 +21,8 @@ inline void generatePlaneRotation(T dx, T dy, T& cs, T& sn) {
   }
 }
 
+/// Applies the Givens rotation in place:
+/// `(dx, dy) <- (cs * dx + sn * dy, -sn * dx + cs * dy)`.
 template <typename T>
 void applyPlaneRotation(T& dx, T& dy, T cs, T sn) {
   T tmp = cs * dx + sn * dy;
