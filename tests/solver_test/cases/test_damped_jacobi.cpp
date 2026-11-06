@@ -3,105 +3,89 @@
 #include "testlib.hpp"
 #include "helpers.hpp"
 
-// Test case to verify the constructor and the inverse diagonal calculation
+// Verify construction and inverse-diagonal calculation. The dia member stores D^-1.
 void test_jacobi_constructor() {
-    std::cout << "constuctor... " << std::flush;
-    // A = [[4, -1, -1],
-    //      [-1, 4, -1],
-    //      [-1, -1, 4]]
-    std::vector<size_t> row_ptr = {0, 3, 6, 9};
-    std::vector<size_t> col_ind = {0, 1, 2, 0, 1, 2, 0, 1, 2};
-    std::vector<double> values = {4.0, -1.0, -1.0, -1.0, 4.0, -1.0, -1.0, -1.0, 4.0};
-    CSRMatrix<double> A(3, 3, values, row_ptr, col_ind);
+  std::cout << "constuctor... " << std::flush;
+  std::vector<size_t> row_ptr = {0, 3, 6, 9};
+  std::vector<size_t> col_ind = {0, 1, 2, 0, 1, 2, 0, 1, 2};
+  std::vector<double> values = {4.0, -1.0, -1.0, -1.0, 4.0, -1.0, -1.0, -1.0, 4.0};
+  csr::CSRMatrix<double> A(3, 3, values, row_ptr, col_ind);
 
-    typename damped_jacobi<double>::params prm;
-    damped_jacobi<double> smoother(A, prm);
+  typename damped_jacobi<double>::params prm;
+  damped_jacobi<double> smoother(A, prm);
 
-    // The diagonal of A is [4, 4, 4].
-    // The inverse diagonal should be [0.25, 0.25, 0.25].
-    std::vector<double> inverseDiag = {0.25, 0.25, 0.25};
-    assertEquals(inverseDiag, smoother.dia, "Diagonal inverse not correct!");
+  // The inverse of the diagonal [4, 4, 4] is [0.25, 0.25, 0.25].
+  std::vector<double> inverseDiag = {0.25, 0.25, 0.25};
+  assertEquals(inverseDiag, smoother.dia, "Diagonal inverse not correct!");
 
-    std::cout<< "OK" << std::endl;
+  std::cout<< "OK" << std::endl;
 }
 
-// Test case for pre-smoothing
+// Verify one pre-smoothing update.
 void test_jacobi_presmoothing() {
-    std::cout << "presmoothing... " << std::flush;
+  std::cout << "presmoothing... " << std::flush;
 
-    std::vector<size_t> row_ptr = {0, 3, 6, 9};
-    std::vector<size_t> col_ind = {0, 1, 2, 0, 1, 2, 0, 1, 2};
-    std::vector<double> values = {4.0, -1.0, -1.0, -1.0, 4.0, -1.0, -1.0, -1.0, 4.0};
-    CSRMatrix<double> A(3, 3, values, row_ptr, col_ind);
-    std::vector<double> rhs = {2.0, 2.0, 2.0};
-    std::vector<double> x = {0.0, 0.0, 0.0};
-    std::vector<double> tmp(3);
-    typename damped_jacobi<double>::params prm(0.5);
-    damped_jacobi<double> smoother(A, prm);
+  std::vector<size_t> row_ptr = {0, 3, 6, 9};
+  std::vector<size_t> col_ind = {0, 1, 2, 0, 1, 2, 0, 1, 2};
+  std::vector<double> values = {4.0, -1.0, -1.0, -1.0, 4.0, -1.0, -1.0, -1.0, 4.0};
+  csr::CSRMatrix<double> A(3, 3, values, row_ptr, col_ind);
+  std::vector<double> rhs = {2.0, 2.0, 2.0};
+  std::vector<double> x = {0.0, 0.0, 0.0};
+  std::vector<double> tmp(3);
+  typename damped_jacobi<double>::params prm(0.5);
+  damped_jacobi<double> smoother(A, prm);
 
-    // Initial x = [0, 0, 0]
-    // Initial residual r = rhs - A * x = rhs = [2, 2, 2]
-    // Update: x_new = x_old + damping * D^-1 * r
-    // x_new = [0, 0, 0] + 0.5 * [0.25, 0.25, 0.25] * [2, 2, 2];
-    // x_new = 0.5 * [0.5, 0.5, 0.5]
-    // x_new = [0.25, 0.25, 0.25]
-    smoother.apply_pre(A, rhs, x, tmp);
+  // Starting from zero, the damped update gives [0.25, 0.25, 0.25].
+  smoother.apply_pre(A, rhs, x, tmp);
 
-    std::vector<double> x_new = {0.25, 0.25, 0.25};
-    assertEquals(x_new, x, "Solution vector is incorrect!");
+  std::vector<double> x_new = {0.25, 0.25, 0.25};
+  assertEquals(x_new, x, "Solution vector is incorrect!");
 
-    std::cout << "OK" << std::endl;
+  std::cout << "OK" << std::endl;
 }
 
-// Test case for post-smoothing
+// Verify that post-smoothing applies the same update as pre-smoothing.
 void test_jacobi_postsmoothing() {
-    std::cout << "postsmoothing... " << std::flush;
+  std::cout << "postsmoothing... " << std::flush;
 
-    std::vector<size_t> row_ptr = {0, 3, 6, 9};
-    std::vector<size_t> col_ind = {0, 1, 2, 0, 1, 2, 0, 1, 2};
-    std::vector<double> values = {4.0, -1.0, -1.0, -1.0, 4.0, -1.0, -1.0, -1.0, 4.0};
-    CSRMatrix<double> A(3, 3, values, row_ptr, col_ind);
-    std::vector<double> rhs = {2.0, 2.0, 2.0};
-    std::vector<double> x = {0.0, 0.0, 0.0};
-    std::vector<double> tmp(3);
-    typename damped_jacobi<double>::params prm(0.5);
-    damped_jacobi<double> smoother(A, prm);
+  std::vector<size_t> row_ptr = {0, 3, 6, 9};
+  std::vector<size_t> col_ind = {0, 1, 2, 0, 1, 2, 0, 1, 2};
+  std::vector<double> values = {4.0, -1.0, -1.0, -1.0, 4.0, -1.0, -1.0, -1.0, 4.0};
+  csr::CSRMatrix<double> A(3, 3, values, row_ptr, col_ind);
+  std::vector<double> rhs = {2.0, 2.0, 2.0};
+  std::vector<double> x = {0.0, 0.0, 0.0};
+  std::vector<double> tmp(3);
+  typename damped_jacobi<double>::params prm(0.5);
+  damped_jacobi<double> smoother(A, prm);
 
-    // Initial x = [0, 0, 0]
-    // Initial residual r = rhs - A * x = rhs = [2, 2, 2]
-    // Update: x_new = x_old + damping * D^-1 * r
-    // x_new = [0, 0, 0] + 0.5 * [0.25, 0.25, 0.25] * [2, 2, 2];
-    // x_new = 0.5 * [0.5, 0.5, 0.5]
-    // x_new = [0.25, 0.25, 0.25]
-    smoother.apply_post(A, rhs, x, tmp);
+  // Starting from zero, the damped update gives [0.25, 0.25, 0.25].
+  smoother.apply_post(A, rhs, x, tmp);
 
-    std::vector<double> x_new = {0.25, 0.25, 0.25};
-    assertEquals(x_new, x, "Solution vector is incorrect!");
+  std::vector<double> x_new = {0.25, 0.25, 0.25};
+  assertEquals(x_new, x, "Solution vector is incorrect!");
 
-    std::cout << "OK" << std::endl;
+  std::cout << "OK" << std::endl;
 }
 
-// Test case for direct solver (without damping factor)
+// Verify the direct Jacobi application without damping.
 void test_direct_jacobi() {
-    std::cout << "direct solver... " << std::flush;
+  std::cout << "direct solver... " << std::flush;
 
-    std::vector<size_t> row_ptr = {0, 3, 6, 9};
-    std::vector<size_t> col_ind = {0, 1, 2, 0, 1, 2, 0, 1, 2};
-    std::vector<double> values = {4.0, -1.0, -1.0, -1.0, 4.0, -1.0, -1.0, -1.0, 4.0};
-    CSRMatrix<double> A(3, 3, values, row_ptr, col_ind);
-    std::vector<double> rhs = {2.0, 2.0, 2.0};
-    std::vector<double> x = {0.0, 0.0, 0.0};
-    std::vector<double> tmp(3);
-    typename damped_jacobi<double>::params prm(0.5);
-    damped_jacobi<double> smoother(A, prm);
+  std::vector<size_t> row_ptr = {0, 3, 6, 9};
+  std::vector<size_t> col_ind = {0, 1, 2, 0, 1, 2, 0, 1, 2};
+  std::vector<double> values = {4.0, -1.0, -1.0, -1.0, 4.0, -1.0, -1.0, -1.0, 4.0};
+  csr::CSRMatrix<double> A(3, 3, values, row_ptr, col_ind);
+  std::vector<double> rhs = {2.0, 2.0, 2.0};
+  std::vector<double> x = {0.0, 0.0, 0.0};
+  std::vector<double> tmp(3);
+  typename damped_jacobi<double>::params prm(0.5);
+  damped_jacobi<double> smoother(A, prm);
 
-    // apply should compute x = D^-1 * rhs
-    // x = [0.25, 0.25, 0.25] * [2, 2, 2]
-    // x = [0.5, 0.5, 0.5]
-    smoother.apply(A, rhs, x);
+  // apply computes x = D^-1 * rhs, independent of the damping factor and input x.
+  smoother.apply(A, rhs, x);
 
-    std::vector<double> x_new = {0.5, 0.5, 0.5};
-    assertEquals(x_new, x, "Solution vector is incorrect!");
+  std::vector<double> x_new = {0.5, 0.5, 0.5};
+  assertEquals(x_new, x, "Solution vector is incorrect!");
 
-    std::cout << "OK" << std::endl;
+  std::cout << "OK" << std::endl;
 }
