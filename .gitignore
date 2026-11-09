@@ -8,3 +8,4 @@ CLAUDE*
 /top_opt_results_*.csv
 __pycache__
 results/
+paper/
