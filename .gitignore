@@ -7,3 +7,4 @@ CLAUDE*
 /top_opt_results_*.txt
 /top_opt_results_*.csv
 __pycache__
+results/

@@ -152,6 +152,39 @@ void testColumnSparsityPattern() {
 	std::cout << "OK" << std::endl;
 }
 
+/// The column threshold is relative to the largest OFF-diagonal entry of the row, not the
+/// row maximum. On a scaled SPD row the diagonal is 1 and dominates every off-diagonal, so
+/// a row-maximum rule would reduce to the global threshold 1 - tau and keep nothing here.
+void testColumnThresholdIgnoresDiagonal() {
+	std::cout << "Column threshold relative to max off-diagonal..." << std::flush;
+
+	/*
+		Symmetric, unit diagonal (scaling leaves it unchanged):
+		[ 1    0.4  0.25 0.05 ]
+		[ 0.4  1    0    0    ]
+		[ 0.25 0    1    0    ]
+		[ 0.05 0    0    1    ]
+		tau = 0.5: row 0 keeps |a| > 0.5 * 0.4 = 0.2 -> columns 1, 2 (not 3).
+		Rows 1-3 have one off-diagonal each, which is their own maximum, so it is kept.
+	*/
+	std::vector<size_t> rp = {0, 4, 6, 8, 10};
+	std::vector<size_t> ci = {0, 1, 2, 3, 0, 1, 0, 2, 0, 3};
+	std::vector<double> v = {1, 0.4, 0.25, 0.05, 0.4, 1, 0.25, 1, 0.05, 1};
+	csr::CSRMatrix<double> m(4, 4, v, rp, ci);
+
+	SparsityPattern<double, ColumnThresholdPattern> column(m, m, ColumnThresholdPattern{0.5}, 1);
+	column.computePattern();
+	const csr::CSRMatrix<int> *p = column.getPattern();
+	assertEquals(p->m_row_pointers, std::vector<size_t>{0, 3, 5, 7, 9}, "Incorrect column-threshold row pointers");
+	assertEquals(p->m_col_indices, std::vector<size_t>{0, 1, 2, 0, 1, 0, 2, 0, 3}, "Incorrect column-threshold columns");
+
+	// The global threshold 1 - tau = 0.5 keeps only the diagonal: the two rules now differ.
+	SparsityPattern<double, GlobalThresholdPattern> global(m, m, GlobalThresholdPattern{0.5}, 1);
+	global.computePattern();
+	assertEquals(global.getPattern()->m_row_pointers, std::vector<size_t>{0, 1, 2, 3, 4}, "Global threshold should keep the diagonal only");
+	std::cout << "OK" << std::endl;
+}
+
 /// FixedNNZPattern keeps the two largest scaled entries per row before S^2 extension.
 void testFixedNNZSparsityPattern() {
 	std::cout << "Fixed NNZ sparsity pattern..." << std::flush;

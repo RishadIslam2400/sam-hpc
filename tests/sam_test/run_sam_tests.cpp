@@ -13,6 +13,7 @@ int main()
 	testGlobalSparsityPattern1();
 	testGlobalSparsityPattern2();
 	testColumnSparsityPattern();
+	testColumnThresholdIgnoresDiagonal();
 	testFixedNNZSparsityPattern();
 
 	std::cout << "\nRunning pattern extension tests..." << std::endl;

@@ -27,7 +27,8 @@ struct SimplePattern {};
 /// The diagonal is always kept.
 struct GlobalThresholdPattern { double globalThreshold; };
 
-/// Keeps off-diagonal entries above a row-relative magnitude threshold.
+/// Keeps off-diagonal entries with magnitude above (1 - tau) times the largest
+/// off-diagonal magnitude in the same row. The diagonal is always kept.
 struct ColumnThresholdPattern { double columnThreshold; };
 
 /// Keeps up to `fixedNNZ` largest-magnitude entries in each candidate row.
@@ -404,7 +405,7 @@ private:
     buildPattern(c, filter);
   }
 
-  // Applies a row-relative magnitude threshold and always retains the diagonal.
+  // Keeps off-diagonals above (1 - tau) * max off-diagonal of the row, and the diagonal.
   void computeColumnThresholdPattern(const double tau) {
     const candidateView c = prepareCandidate();
 
@@ -412,9 +413,11 @@ private:
       const size_t rowStart = c.row_pointers[i];
       const size_t rowEnd = c.row_pointers[i + 1];
 
+      // Relative to the largest Off-diagonal entry.
       T maxVal = 0;
       for (size_t j = rowStart; j < rowEnd; ++j) {
-        maxVal = std::max(maxVal, std::abs(c.vals[j]));
+        if (c.col_indices[j] != i)
+          maxVal = std::max(maxVal, std::abs(c.vals[j]));
       }
       const T threshold = (1 - tau) * maxVal;
 
@@ -492,9 +495,11 @@ private:
       const size_t rowStart = c.row_pointers[i];
       const size_t rowEnd = c.row_pointers[i + 1];
 
+      // Relative to the largest OFF-diagonal entry.
       T maxVal = 0;
       for (size_t j = rowStart; j < rowEnd; ++j) {
-        maxVal = std::max(maxVal, std::abs(c.vals[j]));
+        if (c.col_indices[j] != i)
+          maxVal = std::max(maxVal, std::abs(c.vals[j]));
       }
       const T threshold = (1 - column_thresh) * maxVal;
 

@@ -43,6 +43,7 @@ MAP_REPS="${MAP_REPS:-5}"                # max map repetitions (min 3, 60 s budg
 SOLVE_REPS="${SOLVE_REPS:-3}"            # timed solves per record for params/e2e/level/side
 SEQ_SOLVE_REPS="${SEQ_SOLVE_REPS:-1}"    # timed solves per record for sequence/periodic
 PHASE_REPS="${PHASE_REPS:-5}"            # phase_bench repetitions
+PARAMS_FAMILIES="${PARAMS_FAMILIES:-global,column,fixed}"  # families swept by params
 NUMA="${NUMA:-1}"                        # 0 = no numactl memory policy
 BUILD="${BUILD:-$ROOT/build-release}"
 
@@ -67,12 +68,12 @@ problem_cd2d() {
 	AMG_GMRES="--gmres-restart 1000 --gmres-maxit 1000 --gmres-tol 1e-8 --precond-side right"
 
 	GLOBAL_SWEEP="${CD2D_GLOBAL_SWEEP:-0.1,0.2,0.3,0.4,0.5}"
-	COLUMN_SWEEP="${CD2D_COLUMN_SWEEP:-0.5,0.6,0.7,0.8,0.9}"
+	COLUMN_SWEEP="${CD2D_COLUMN_SWEEP:-0.05,0.1,0.2,0.3,0.5}"
 	FIXED_SWEEP="${CD2D_FIXED_SWEEP:-1,2,3,4,5}"
 	
 	# Choose after paramter sweep
-	GLOBAL="${CD2D_GLOBAL:-0.3}"
-	COLUMN="${CD2D_COLUMN:-0.7}"
+	GLOBAL="${CD2D_GLOBAL:-0.2}"
+	COLUMN="${CD2D_COLUMN:-0.3}"
 	FIXED="${CD2D_FIXED:-2}"
 	STENCIL=""           # the 5-point stencil IS S(A_0) here
 	EXPLICIT="${CD2D_EXPLICIT:-}"
@@ -92,12 +93,12 @@ problem_topopt() {
 	AMG_GMRES=""
 
 	GLOBAL_SWEEP="${TOPOPT_GLOBAL_SWEEP:-0.01,0.05,0.1,0.2,0.3,0.5}"
-	COLUMN_SWEEP="${TOPOPT_COLUMN_SWEEP:-0.5,0.6,0.7,0.8,0.9,0.95}"
+	COLUMN_SWEEP="${TOPOPT_COLUMN_SWEEP:-0.05,0.1,0.2,0.3,0.4,0.5}"
 	FIXED_SWEEP="${TOPOPT_FIXED_SWEEP:-2,3,4,5,6,7}"
 	
-	GLOBAL="${TOPOPT_GLOBAL:-0.3}"
-	COLUMN="${TOPOPT_COLUMN:-0.8}"
-	FIXED="${TOPOPT_FIXED:-3}"
+	GLOBAL="${TOPOPT_GLOBAL:-0.2}"
+	COLUMN="${TOPOPT_COLUMN:-0.3}"
+	FIXED="${TOPOPT_FIXED:-4}"
 	# Patt-0: 7-point stencil {0,+-3,+-300,+-6300}. 
 	# Patt-1: custom stencil {0,+-1,+-300,+-6000}.
 	STENCIL="${TOPOPT_STENCIL:-Patt-0=0,-3,3,-300,300,-6300,6300;Patt-1=0,-1,1,-300,300,-6000,6000}"
@@ -118,12 +119,12 @@ problem_topopt_big() {
 	AMG_GMRES=""
 
 	GLOBAL_SWEEP="${TOPOPT_BIG_GLOBAL_SWEEP:-0.1,0.3,0.5}"
-	COLUMN_SWEEP="${TOPOPT_BIG_COLUMN_SWEEP:-0.7,0.8,0.9}"
+	COLUMN_SWEEP="${TOPOPT_BIG_COLUMN_SWEEP:-0.1,0.3,0.5}"
 	FIXED_SWEEP="${TOPOPT_BIG_FIXED_SWEEP:-3,5,7}"
 	
-	GLOBAL="${TOPOPT_BIG_GLOBAL:-${TOPOPT_GLOBAL:-0.3}}"
-	COLUMN="${TOPOPT_BIG_COLUMN:-${TOPOPT_COLUMN:-0.8}}"
-	FIXED="${TOPOPT_BIG_FIXED:-${TOPOPT_FIXED:-3}}"
+	GLOBAL="${TOPOPT_BIG_GLOBAL:-${TOPOPT_GLOBAL:-0.2}}"
+	COLUMN="${TOPOPT_BIG_COLUMN:-${TOPOPT_COLUMN:-0.3}}"
+	FIXED="${TOPOPT_BIG_FIXED:-${TOPOPT_FIXED:-4}}"
 	STENCIL="${TOPOPT_BIG_STENCIL:-Patt-0=0,-3,3,-450,450,-13950,13950;Patt-1=0,-1,1,-450,450,-13500,13500}"
 	EXPLICIT="${TOPOPT_BIG_EXPLICIT:-}"
 }
@@ -143,12 +144,12 @@ problem_elast3d() {
 	SUPPORTED="${ELAST3D_EXPERIMENTS:-params,sequence,scaling,e2e,level,periodic}"
 
 	GLOBAL_SWEEP="${ELAST3D_GLOBAL_SWEEP:-0.01,0.05,0.1,0.2,0.3,0.5}"
-	COLUMN_SWEEP="${ELAST3D_COLUMN_SWEEP:-0.5,0.6,0.7,0.8,0.9,0.95}"
+	COLUMN_SWEEP="${ELAST3D_COLUMN_SWEEP:-0.05,0.1,0.2,0.3,0.4,0.5}"
 	FIXED_SWEEP="${ELAST3D_FIXED_SWEEP:-2,3,4,5,6,7}"
 	
-	GLOBAL="${ELAST3D_GLOBAL:-0.3}"
-	COLUMN="${ELAST3D_COLUMN:-0.8}"
-	FIXED="${ELAST3D_FIXED:-3}"
+	GLOBAL="${ELAST3D_GLOBAL:-0.2}"
+	COLUMN="${ELAST3D_COLUMN:-0.3}"
+	FIXED="${ELAST3D_FIXED:-7}"
 	STENCIL="${ELAST3D_STENCIL:-Patt-0=0,-3,3,-288,288,-7200,7200;Patt-1=0,-1,1,-288,288,-6912,6912}"
 	EXPLICIT="${ELAST3D_EXPLICIT:-}"
 }
@@ -250,7 +251,7 @@ exp_params() {
 		-a "$TARGET" -b "$PAIR" -r sam,reuse,recompute -u source -p "$(baselines)" $(chosen)
 	for v in source union; do
 		run "$d/sweep_$v.log" "$PIPE" $(pipe_common) -t "$THREADS_MAIN" --solve-reps "$SOLVE_REPS" \
-			-a "$TARGET" -b "$PAIR" -r sam -u "$v" -p global,column,fixed \
+			-a "$TARGET" -b "$PAIR" -r sam -u "$v" -p "$PARAMS_FAMILIES" \
 			--global "$GLOBAL_SWEEP" --column "$COLUMN_SWEEP" --fixed "$FIXED_SWEEP"
 	done
 }
