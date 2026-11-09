@@ -1,5 +1,8 @@
 #pragma once
 
+#include <limits>
+#include <stdexcept>
+#include <string>
 #include <eigen3/Eigen/Sparse>
 #include <tbb/enumerable_thread_specific.h>
 #include "sam_hpc/core/CSRMatrix.hpp"
@@ -103,6 +106,21 @@ public:
   /// @param A Square matrix with sorted CSR rows. Dimensions and nonzero count must fit
   ///        in Eigen's `int` index type. A is viewed only during construction.
   ilut(const csr::CSRMatrix<T> &A, const params &prm) : prm(prm), m_matrix_size(A.m_rows) {
+    if (A.m_rows > 0) {
+      const long long n = static_cast<long long>(A.m_rows);
+      long long fill_in = static_cast<long long>(A.m_nnz) * prm.fill_factor / n + 1;
+      if (fill_in > n)
+        fill_in = n;
+      const long long reserve = n * (fill_in / 2 + fill_in / 2 + 1);
+      if (reserve > std::numeric_limits<int>::max()) {
+        const long long max_fill = (std::numeric_limits<int>::max() / n - 1) * n /
+                                   static_cast<long long>(A.m_nnz);
+        throw std::invalid_argument(
+          "ilut: fill factor " + std::to_string(prm.fill_factor) + " makes Eigen reserve " +
+          std::to_string(reserve) + " entries, past its int index limit; use a fill factor <= " +
+          std::to_string(max_fill) + " for this matrix");
+      }
+    }
     std::vector<int> row_ptr(A.m_row_pointers.begin(), A.m_row_pointers.end());
     std::vector<int> col_ind(A.m_col_indices.begin(), A.m_col_indices.end());
 

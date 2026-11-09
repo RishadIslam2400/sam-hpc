@@ -4,6 +4,7 @@
 #include "cases/test_sam_computation.cpp"
 #include "cases/test_sam_map_sides.cpp"
 #include "cases/test_fused_map.cpp"
+#include "cases/test_stencil_pattern.cpp"
 
 int main()
 {
@@ -44,5 +45,14 @@ int main()
 	std::cout << "\nRunning fused pattern extension tests..." << std::endl;
 	testFusedMapSmall();
 	testFusedMapCD2D();
+
+	std::cout << "\nRunning stencil and explicit pattern tests..." << std::endl;
+	testStencilPatternOffsets();
+	testStencilPatternRestricted();
+	testStencilPatternIgnoresLevel();
+	testStencilTransposed();
+	testExplicitPattern();
+	testStencilMapCD2D();
+	testExplicitMapMatchesDirect();
 	return 0;
 }

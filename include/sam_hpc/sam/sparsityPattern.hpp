@@ -4,8 +4,12 @@
 #include "sam_hpc/sam/extendPattern.hpp"
 #include "sam_hpc/util/parallel.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <queue>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 /// Wall-clock phases of computePattern(), measured in nanoseconds.
 struct pattern_phase_times {
@@ -35,9 +39,34 @@ struct combinedThresholdPattern {
   double column_thresh;
 };
 
+/// Fixed-offset (stencil) pattern. The offsets are mesh-specific.
+struct StencilPattern {
+  std::vector<long> offsets;
+  bool restrict_to_structure = false;
+};
+
+/// The offsets of the transposed stencil.
+inline StencilPattern transposed(const StencilPattern &s) {
+  StencilPattern t = s;
+  for (long &d : t.offsets)
+    d = -d;
+  return t;
+}
+
+/// A caller-supplied pattern used exactly as given
+struct ExplicitPattern { 
+  const csr::CSRMatrix<int> *pattern; 
+};
+
+/// Whether a pattern type is extended to S^level. Simple, stencil and explicit patterns are
+/// used as they are and ignore the level argument.
+template <typename PatternType>
+inline constexpr bool pattern_is_extended_v =
+  !std::is_same_v<PatternType, SimplePattern> && !std::is_same_v<PatternType, StencilPattern> &&
+  !std::is_same_v<PatternType, ExplicitPattern>;
+
+
 /// Selects the matrix used to construct the sparsification candidate.
-/// `source` uses A_k directly. `union_max` first merges the diagonally scaled source and
-/// target, retaining the larger magnitude at shared locations, then sparsifies the result.
 enum class patternMatrix {
   source,
   union_max
@@ -91,6 +120,10 @@ public:
       computeFixedNNZPattern(m_type.fixedNNZ);
     else if constexpr (std::is_same_v<PatternType, combinedThresholdPattern>)
       computeCombinedPattern(m_type.global_thresh, m_type.column_thresh);
+    else if constexpr (std::is_same_v<PatternType, StencilPattern>)
+      computeStencilPattern(m_type.offsets, m_type.restrict_to_structure);
+    else if constexpr (std::is_same_v<PatternType, ExplicitPattern>)
+      computeExplicitPattern(m_type.pattern);
     else
       static_assert(!std::is_same_v<T,T>, "Unsupported pattern type");
 
@@ -229,6 +262,81 @@ private:
     m_pattern->m_nnz = c.row_pointers[c.rows];
     m_pattern->m_row_pointers.assign(c.row_pointers, c.row_pointers + c.rows + 1);
     m_pattern->m_col_indices.assign(c.col_indices, c.col_indices + m_pattern->m_nnz);
+    m_pattern->m_vals.assign(m_pattern->m_nnz, 1);
+  }
+
+  // Row s keeps {s + d : d in offsets} intersected with [0, n), and with the columns of row s
+  // of the source when `restricted` is set.
+  void computeStencilPattern(std::vector<long> offsets, bool restricted) {
+    assert(m_originalMatrix.m_rows == m_originalMatrix.m_cols && "Sparsity patterns are defined for square matrices only.");
+    std::sort(offsets.begin(), offsets.end());
+    offsets.erase(std::unique(offsets.begin(), offsets.end()), offsets.end());
+
+    const long n = static_cast<long>(m_originalMatrix.m_rows);
+    const csr::CSRMatrix<T> &A = m_originalMatrix;
+    const auto keep = [&](long s, long d) {
+      const long c = s + d;
+      if (c < 0 || c >= n)
+        return false;
+      if (!restricted)
+        return true;
+      const auto first = A.m_col_indices.begin() + A.m_row_pointers[s];
+      const auto last = A.m_col_indices.begin() + A.m_row_pointers[s + 1];
+      return std::binary_search(first, last, static_cast<csr::index_t>(c));
+    };
+    m_pattern = std::make_unique<csr::CSRMatrix<int>>();
+    m_pattern->m_rows = m_originalMatrix.m_rows;
+    m_pattern->m_cols = m_originalMatrix.m_cols;
+    m_pattern->m_row_pointers.resize(m_pattern->m_rows + 1, 0);
+
+    tbb::parallel_for(tbb::blocked_range<long>(0, n), [&](const tbb::blocked_range<long> &r) {
+      for (long s = r.begin(); s < r.end(); ++s) {
+        size_t count = 0;
+        for (const long d : offsets)
+          count += keep(s, d);
+        m_pattern->m_row_pointers[s + 1] = count;
+      }
+    });
+
+    m_pattern->m_nnz = m_pattern->scanRowSize();
+    m_pattern->m_col_indices.resize(m_pattern->m_nnz);
+    m_pattern->m_vals.resize(m_pattern->m_nnz, 1);
+
+    tbb::parallel_for(tbb::blocked_range<long>(0, n), [&](const tbb::blocked_range<long> &r) {
+      for (long s = r.begin(); s < r.end(); ++s) {
+        size_t out = m_pattern->m_row_pointers[s];
+        for (const long d : offsets) {
+          if (keep(s, d))
+            m_pattern->m_col_indices[out++] = static_cast<csr::index_t>(s + d);
+        }
+      }
+    });
+  }
+
+  // Copies a validated caller-supplied pattern.
+  void computeExplicitPattern(const csr::CSRMatrix<int> *p) {
+    if (p == nullptr)
+      throw std::invalid_argument("ExplicitPattern: null pattern");
+    const size_t n = m_originalMatrix.m_rows;
+    if (p->m_rows != n || p->m_cols != m_originalMatrix.m_cols)
+      throw std::invalid_argument("ExplicitPattern: pattern is " + std::to_string(p->m_rows) + " x " +
+                                  std::to_string(p->m_cols) + ", source is " + std::to_string(n) +
+                                  " x " + std::to_string(m_originalMatrix.m_cols));
+    if (p->m_row_pointers.size() != n + 1 || p->m_row_pointers[0] != 0 ||
+        p->m_row_pointers[n] != p->m_nnz || p->m_col_indices.size() != p->m_nnz)
+      throw std::invalid_argument("ExplicitPattern: inconsistent CSR arrays");
+    for (size_t i = 0; i < n; ++i) {
+      const size_t b = p->m_row_pointers[i], e = p->m_row_pointers[i + 1];
+      if (e < b)
+        throw std::invalid_argument("ExplicitPattern: row pointers decrease at row " + std::to_string(i));
+      for (size_t k = b; k < e; ++k) {
+        if (p->m_col_indices[k] >= p->m_cols || (k > b && p->m_col_indices[k] <= p->m_col_indices[k - 1]))
+          throw std::invalid_argument("ExplicitPattern: row " + std::to_string(i) +
+                                      " is not strictly ascending and in range");
+      }
+    }
+
+    m_pattern = std::make_unique<csr::CSRMatrix<int>>(*p);
     m_pattern->m_vals.assign(m_pattern->m_nnz, 1);
   }
 

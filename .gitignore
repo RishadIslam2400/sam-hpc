@@ -6,3 +6,4 @@ nohup.out
 CLAUDE*
 /top_opt_results_*.txt
 /top_opt_results_*.csv
+__pycache__

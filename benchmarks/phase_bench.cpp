@@ -2,6 +2,7 @@
 #include "sam_hpc/util/config.hpp"
 #include "sam_hpc/core/read_mat.hpp"
 #include "sam_hpc/util/measure.hpp"
+#include "bench_patterns.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -35,15 +36,16 @@ void run_pattern(const std::string& label, const config_t& cfg, int threads,
 	using Map = SparseApproximateMap<double, PatternType>;
 	const pattern_variant pv = parse_pattern_variant(cfg.variant);
 	const patternMatrix pm = pv.union_candidate ? patternMatrix::union_max : patternMatrix::source;
+	const int level = pattern_is_extended_v<PatternType> ? cfg.level : 1;
 
 	pattern_phase_times pattern_split{};
 	const sample pattern_total = measure(cfg.iters, [&] {
-		SparsityPattern<double, PatternType> sp(source, target, params, 2, pm);
+		SparsityPattern<double, PatternType> sp(source, target, params, level, pm);
 		sp.computePattern();
 		pattern_split = sp.getPhaseTimes();
 	});
 
-	SparsityPattern<double, PatternType> sp(source, target, params, 2, pm);
+	SparsityPattern<double, PatternType> sp(source, target, params, level, pm);
 	sp.computePattern();
 	const size_t pattern_nnz = sp.getNNZ();
 
@@ -65,7 +67,7 @@ void run_pattern(const std::string& label, const config_t& cfg, int threads,
 	});
 
 	const sample total_s = measure(cfg.iters, [&] {
-		SparsityPattern<double, PatternType> p(source, target, params, 2, pm);
+		SparsityPattern<double, PatternType> p(source, target, params, level, pm);
 		p.computePattern();
 		csr::CSRMatrix<double> m;
 		Map::computeMap(target, source, *p.getPattern(), m);
@@ -146,9 +148,9 @@ void run_pattern(const std::string& label, const config_t& cfg, int threads,
 	}
 	std::cout << std::fixed << "\n";
 
-	if (parse_fused(cfg.extension) && !std::is_same_v<PatternType, SimplePattern>) {
+	if (parse_fused(cfg.extension) && pattern_is_extended_v<PatternType> && level > 1) {
 		const sample materialized_s = measure(cfg.iters, [&] {
-			SparsityPattern<double, PatternType> p(source, target, params, 2, pm);
+			SparsityPattern<double, PatternType> p(source, target, params, level, pm);
 			p.computePattern();
 			csr::CSRMatrix<double> m;
 			Map::computeMap(target, source, *p.getPattern(), m);
@@ -157,7 +159,7 @@ void run_pattern(const std::string& label, const config_t& cfg, int threads,
 			SparsityPattern<double, PatternType> p(source, target, params, 1, pm);
 			p.computePattern();
 			csr::CSRMatrix<double> m;
-			Map::computeMapFused(target, source, *p.getPattern(), 2, m);
+			Map::computeMapFused(target, source, *p.getPattern(), level, m);
 		});
 		std::cout << "  fused extension: pattern + map " << std::setprecision(2)
 							<< materialized_s.min_ms << " ms materialized, " << fused_s.min_ms
@@ -180,22 +182,16 @@ void run_pattern(const std::string& label, const config_t& cfg, int threads,
 						<< std::fixed << "\n";
 }
 
-/// Whether -p selects `key`. A substring test on the raw list, so separators are not checked.
-bool enabled(const config_t& cfg, const std::string& key) {
-  return cfg.patterns == "all" || cfg.patterns.find(key) != std::string::npos;
-}
-
-void run_all(const config_t& cfg, int threads, const csr::CSRMatrix<double>& target,
-			       const csr::CSRMatrix<double>& source)
+void run_all(const config_t& cfg, const bench::pattern_set& ps, int threads,
+             const csr::CSRMatrix<double>& target, const csr::CSRMatrix<double>& source)
 {
 	tbb::global_control gc(tbb::global_control::max_allowed_parallelism, threads);
 	num_threads = threads;
 
-	if (enabled(cfg, "simple"))   run_pattern("simple", cfg, threads, target, source, SimplePattern{});
-	if (enabled(cfg, "global"))   run_pattern("global 0.001", cfg, threads, target, source, GlobalThresholdPattern{0.001});
-	if (enabled(cfg, "column"))   run_pattern("column 0.8", cfg, threads, target, source, ColumnThresholdPattern{0.8});
-	if (enabled(cfg, "fixed"))    run_pattern("fixed nnz 5", cfg, threads, target, source, FixedNNZPattern{5});
-	if (enabled(cfg, "combined")) run_pattern("combined", cfg, threads, target, source, combinedThresholdPattern{0.001, 0.8});
+	const csr::CSRMatrix<int> target_structure = bench::structure_of(target);
+	bench::for_each_pattern(ps, &target_structure, [&](const std::string& label, const auto& params) {
+		run_pattern(label, cfg, threads, target, source, params);
+	});
 }
 
 } // namespace
@@ -228,11 +224,12 @@ int main(int argc, char** argv) {
 																: static_cast<int>(std::max(1u, std::thread::hardware_concurrency())));
 	}
 
+	const bench::pattern_set ps(cfg);
 	for (int t : sweep) {
 		std::cout << "\n================ threads: " << t << " ================\n";
 		bench::report_pinning(t);
 		pinner.report(t);
-		run_all(cfg, t, target, source);
+		run_all(cfg, ps, t, target, source);
 		// Cumulative: one pinner serves the whole sweep, and a thread keeps its first core.
 		std::cout << "# threads pinned so far: " << pinner.pinned() << "\n";
 	}
