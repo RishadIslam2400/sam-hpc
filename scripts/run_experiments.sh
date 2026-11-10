@@ -85,7 +85,8 @@ problem_topopt() {
 	TARGET=40            
 	PAIR=50
 	SEQ_FIRST=41; SEQ_LAST=50
-	LONG_TARGET=10; LONG_FIRST=11; LONG_LAST=50
+	# Not 10: matrix_10 (8.80M nnz) puts ILUT(250) past Eigen's int index limit (max fill 244).
+	LONG_TARGET=11; LONG_FIRST=12; LONG_LAST=50
 	PERIODS="${TOPOPT_PERIODS:-5 10 20}"
 
 	SOLVER="${TOPOPT_SOLVER:---precond ilut --ilut-fill 250 --ilut-droptol 1e-3 --gmres-restart 2000 --gmres-maxit 2000 --gmres-tol 1e-8 --precond-side right}"
@@ -340,16 +341,16 @@ collect() {
 	[ -n "$first_log" ] || return 0
 	if [ "$exp" = scaling ]; then
 		{ echo "run,pattern,variant,threads,phase,ms"
-			for f in "$dir"/*.log; do grep '^CSV,' "$f" | sed "s|^CSV,|$(basename "$f" .log),|"; done
+			for f in "$dir"/*.log; do grep '^CSV,' "$f" | sed "s|^CSV,|$(basename "$f" .log),|" || true; done
 		} > "$dir/phases.csv"
 		{ echo "run,pattern,variant,threads,map_nnz,residual_exact,residual_qr"
-			for f in "$dir"/*.log; do grep '^CSVACC,' "$f" | sed "s|^CSVACC,|$(basename "$f" .log),|"; done
+			for f in "$dir"/*.log; do grep '^CSVACC,' "$f" | sed "s|^CSVACC,|$(basename "$f" .log),|" || true; done
 		} > "$dir/accuracy.csv"
 		# The per-pattern |I|, |J|, GFLOP/s lines are not CSV; keep them greppable in one place.
 		grep -h -B1 -A3 "map internals" "$dir"/*.log > "$dir/map_internals.txt" 2>/dev/null || true
 	else
-		{ grep -h -m1 '^# CSV,' "$first_log" | sed 's/^# CSV,/run,/'
-			for f in "$dir"/*.log; do grep '^CSV,' "$f" | sed "s|^CSV,|$(basename "$f" .log),|"; done
+		{ grep -h -m1 '^# CSV,' "$first_log" | sed 's/^# CSV,/run,/' || true
+			for f in "$dir"/*.log; do grep '^CSV,' "$f" | sed "s|^CSV,|$(basename "$f" .log),|" || true; done
 		} > "$dir/$exp.csv"
 	fi
 }
